@@ -183,7 +183,7 @@ export default function NewLoanModal({ isOpen, onClose, onSuccess, availableCash
                   <option value="">Seleccione un cliente...</option>
                   {clients.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.first_name} {c.last_name} — CC: {c.document_number} ({c.phone})
+                      {c.first_name} {c.last_name || ''}{c.document_number ? ` — ${c.document_type || 'CC'}: ${c.document_number}` : ''}{c.phone ? ` (${c.phone})` : ''}
                     </option>
                   ))}
                 </select>

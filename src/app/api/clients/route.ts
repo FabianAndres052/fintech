@@ -54,33 +54,38 @@ export async function POST(req: NextRequest) {
       document_type = 'CC',
       document_number,
       first_name,
-      last_name,
-      phone,
+      last_name = '',
+      phone = '',
       email,
-      address,
+      address = '',
       city = 'Colombia',
       occupation,
       monthly_income = 0,
       notes,
     } = body;
 
-    if (!document_number || !first_name || !last_name || !phone || !address) {
+    // Solo el nombre es obligatorio
+    if (!first_name || !String(first_name).trim()) {
       return NextResponse.json(
-        { error: 'Cédula/Documento, nombres, apellidos, teléfono y dirección son obligatorios.' },
+        { error: 'El nombre del cliente es obligatorio.' },
         { status: 400 }
       );
     }
 
-    // Comprobar cédula duplicada
-    const existing = await query<any[]>('SELECT id FROM clients WHERE document_number = ? LIMIT 1', [
-      document_number.trim(),
-    ]);
+    const cleanDoc = document_number && String(document_number).trim() ? String(document_number).trim() : null;
 
-    if (existing.length > 0) {
-      return NextResponse.json(
-        { error: 'Ya existe un cliente registrado con ese número de documento.' },
-        { status: 409 }
-      );
+    // Comprobar cédula duplicada si se proporciona
+    if (cleanDoc) {
+      const existing = await query<any[]>('SELECT id FROM clients WHERE document_number = ? LIMIT 1', [
+        cleanDoc,
+      ]);
+
+      if (existing.length > 0) {
+        return NextResponse.json(
+          { error: 'Ya existe un cliente registrado con ese número de documento.' },
+          { status: 409 }
+        );
+      }
     }
 
     const insertResult = await query<any>(
@@ -88,17 +93,17 @@ export async function POST(req: NextRequest) {
         (document_type, document_number, first_name, last_name, phone, email, address, city, occupation, monthly_income, notes, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVO')`,
       [
-        document_type,
-        document_number.trim(),
-        first_name.trim(),
-        last_name.trim(),
-        phone.trim(),
-        email ? email.trim() : null,
-        address.trim(),
-        city ? city.trim() : 'Colombia',
-        occupation ? occupation.trim() : null,
+        cleanDoc ? (document_type || 'CC') : null,
+        cleanDoc,
+        String(first_name).trim(),
+        last_name ? String(last_name).trim() : '',
+        phone ? String(phone).trim() : '',
+        email ? String(email).trim() : null,
+        address ? String(address).trim() : '',
+        city ? String(city).trim() : 'Colombia',
+        occupation ? String(occupation).trim() : null,
         Number(monthly_income) || 0,
-        notes ? notes.trim() : null,
+        notes ? String(notes).trim() : null,
       ]
     );
 
@@ -110,7 +115,7 @@ export async function POST(req: NextRequest) {
         'CREATE_CLIENT',
         'clients',
         String(insertResult.insertId),
-        JSON.stringify({ name: `${first_name} ${last_name}`, document_number }),
+        JSON.stringify({ name: `${first_name} ${last_name || ''}`.trim(), document_number: cleanDoc }),
       ]
     );
 

@@ -49,13 +49,13 @@ CREATE TABLE `administrators` (
 -- -----------------------------------------------------------------------------
 CREATE TABLE `clients` (
   `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  `document_type` ENUM('CC', 'CE', 'NIT', 'PASAPORTE') NOT NULL DEFAULT 'CC',
-  `document_number` VARCHAR(30) NOT NULL UNIQUE,
+  `document_type` ENUM('CC', 'CE', 'NIT', 'PASAPORTE') NULL DEFAULT 'CC',
+  `document_number` VARCHAR(30) NULL UNIQUE,
   `first_name` VARCHAR(100) NOT NULL,
-  `last_name` VARCHAR(100) NOT NULL,
-  `phone` VARCHAR(25) NOT NULL,
+  `last_name` VARCHAR(100) NULL DEFAULT '',
+  `phone` VARCHAR(25) NULL DEFAULT '',
   `email` VARCHAR(150) NULL,
-  `address` VARCHAR(255) NOT NULL,
+  `address` VARCHAR(255) NULL DEFAULT '',
   `city` VARCHAR(100) DEFAULT 'Colombia',
   `occupation` VARCHAR(100) NULL,
   `monthly_income` DECIMAL(14, 2) DEFAULT 0.00,

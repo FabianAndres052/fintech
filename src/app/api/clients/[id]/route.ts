@@ -57,6 +57,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const body = await req.json();
 
     const {
+      document_type,
+      document_number,
       first_name,
       last_name,
       phone,
@@ -69,13 +71,29 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       status,
     } = body;
 
+    const cleanDoc = document_number !== undefined ? (document_number && String(document_number).trim() ? String(document_number).trim() : null) : undefined;
+    if (cleanDoc) {
+      const existing = await query<any[]>('SELECT id FROM clients WHERE document_number = ? AND id != ? LIMIT 1', [
+        cleanDoc,
+        clientId,
+      ]);
+      if (existing.length > 0) {
+        return NextResponse.json(
+          { error: 'Ya existe otro cliente registrado con ese número de documento.' },
+          { status: 409 }
+        );
+      }
+    }
+
     await query(
       `UPDATE clients SET
+        document_type = COALESCE(?, document_type),
+        document_number = CASE WHEN ? = 1 THEN ? ELSE document_number END,
         first_name = COALESCE(?, first_name),
-        last_name = COALESCE(?, last_name),
-        phone = COALESCE(?, phone),
+        last_name = CASE WHEN ? IS NOT NULL THEN ? ELSE last_name END,
+        phone = CASE WHEN ? IS NOT NULL THEN ? ELSE phone END,
         email = ?,
-        address = COALESCE(?, address),
+        address = CASE WHEN ? IS NOT NULL THEN ? ELSE address END,
         city = COALESCE(?, city),
         occupation = ?,
         monthly_income = ?,
@@ -83,15 +101,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         status = COALESCE(?, status)
        WHERE id = ?`,
       [
-        first_name?.trim(),
-        last_name?.trim(),
-        phone?.trim(),
-        email ? email.trim() : null,
-        address?.trim(),
-        city?.trim(),
-        occupation ? occupation.trim() : null,
+        document_type || null,
+        cleanDoc !== undefined ? 1 : 0,
+        cleanDoc || null,
+        first_name ? String(first_name).trim() : null,
+        last_name !== undefined ? String(last_name).trim() : null,
+        last_name !== undefined ? String(last_name).trim() : null,
+        phone !== undefined ? String(phone).trim() : null,
+        phone !== undefined ? String(phone).trim() : null,
+        email ? String(email).trim() : null,
+        address !== undefined ? String(address).trim() : null,
+        address !== undefined ? String(address).trim() : null,
+        city ? String(city).trim() : null,
+        occupation ? String(occupation).trim() : null,
         monthly_income !== undefined ? Number(monthly_income) : 0,
-        notes ? notes.trim() : null,
+        notes ? String(notes).trim() : null,
         status,
         clientId,
       ]

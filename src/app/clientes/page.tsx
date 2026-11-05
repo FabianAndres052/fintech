@@ -122,12 +122,12 @@ export default function ClientsPage() {
     setEditingClient(client);
     setFormData({
       document_type: client.document_type || 'CC',
-      document_number: client.document_number,
+      document_number: client.document_number || '',
       first_name: client.first_name,
-      last_name: client.last_name,
-      phone: client.phone,
+      last_name: client.last_name || '',
+      phone: client.phone || '',
       email: client.email || '',
-      address: client.address,
+      address: client.address || '',
       city: client.city || 'Colombia',
       occupation: client.occupation || '',
       monthly_income: client.monthly_income ? String(client.monthly_income) : '',
@@ -309,25 +309,37 @@ export default function ClientsPage() {
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0">
-                              {c.first_name.charAt(0)}
+                              {c.first_name ? c.first_name.charAt(0).toUpperCase() : 'C'}
                             </div>
                             <div>
                               <p className="font-bold text-white">
-                                {c.first_name} {c.last_name}
+                                {c.first_name} {c.last_name || ''}
                               </p>
-                              <p className="text-[11px] text-slate-400 truncate max-w-xs">{c.address}</p>
+                              {c.address ? (
+                                <p className="text-[11px] text-slate-400 truncate max-w-xs">{c.address}</p>
+                              ) : null}
                             </div>
                           </div>
                         </td>
                         <td className="py-3.5 px-4 font-mono text-slate-300">
-                          <span className="text-[10px] text-slate-400 mr-1">{c.document_type}</span>
-                          {c.document_number}
+                          {c.document_number ? (
+                            <>
+                              <span className="text-[10px] text-slate-400 mr-1">{c.document_type || 'CC'}</span>
+                              {c.document_number}
+                            </>
+                          ) : (
+                            <span className="text-xs text-slate-500 italic">Sin documento</span>
+                          )}
                         </td>
                         <td className="py-3.5 px-4 space-y-0.5">
-                          <div className="flex items-center gap-1.5 text-slate-300">
-                            <Phone className="w-3 h-3 text-emerald-400" />
-                            <span>{c.phone}</span>
-                          </div>
+                          {c.phone ? (
+                            <div className="flex items-center gap-1.5 text-slate-300">
+                              <Phone className="w-3 h-3 text-emerald-400" />
+                              <span>{c.phone}</span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-500 italic">Sin teléfono</span>
+                          )}
                           {c.email && (
                             <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
                               <Mail className="w-3 h-3 text-slate-500" />
@@ -447,77 +459,74 @@ export default function ClientsPage() {
                   </select>
                 </div>
                 <div className="space-y-1 col-span-2">
-                  <label className="text-xs font-semibold text-slate-300">Número de Cédula</label>
+                  <label className="text-xs font-semibold text-slate-300">Número de Cédula / Documento (Opcional)</label>
                   <input
                     type="text"
                     value={formData.document_number}
                     onChange={(e) => setFormData({ ...formData, document_number: e.target.value })}
-                    placeholder="Ej: 1020304050"
-                    disabled={!!editingClient}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 disabled:opacity-50"
-                    required
+                    placeholder="Ej: 1020304050 (opcional)"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">Nombres</label>
+                  <label className="text-xs font-semibold text-slate-300">
+                    Nombre Completo o Razón Social <span className="text-emerald-400">*</span>
+                  </label>
                   <input
                     type="text"
                     value={formData.first_name}
                     onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                    placeholder="Ej: Juan Carlos"
+                    placeholder="Ej: Carlos Rueda o Kike"
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
                     required
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">Apellidos</label>
+                  <label className="text-xs font-semibold text-slate-300">Apellidos (Opcional)</label>
                   <input
                     type="text"
                     value={formData.last_name}
                     onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                    placeholder="Ej: Pérez Gómez"
+                    placeholder="Ej: Gómez (opcional)"
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
-                    required
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">Teléfono / WhatsApp</label>
+                  <label className="text-xs font-semibold text-slate-300">Teléfono / WhatsApp (Opcional)</label>
                   <input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="Ej: 300 123 4567"
+                    placeholder="Ej: 300 123 4567 (opcional)"
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
-                    required
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">Correo Electrónico</label>
+                  <label className="text-xs font-semibold text-slate-300">Correo Electrónico (Opcional)</label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="cliente@correo.com"
+                    placeholder="cliente@correo.com (opcional)"
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-300">Dirección Residencial</label>
+                <label className="text-xs font-semibold text-slate-300">Dirección Residencial (Opcional)</label>
                 <input
                   type="text"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Ej: Calle 45 # 12-34, Barrio El Prado"
+                  placeholder="Ej: Calle 45 # 12-34 (opcional)"
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
-                  required
                 />
               </div>
 

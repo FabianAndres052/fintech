@@ -24,14 +24,14 @@ export interface Administrator {
 
 export interface Client {
   id: number;
-  document_type: 'CC' | 'CE' | 'NIT' | 'PASAPORTE';
-  document_number: string;
+  document_type?: 'CC' | 'CE' | 'NIT' | 'PASAPORTE' | string | null;
+  document_number?: string | null;
   first_name: string;
-  last_name: string;
-  phone: string;
+  last_name?: string | null;
+  phone?: string | null;
   email?: string | null;
-  address: string;
-  city?: string;
+  address?: string | null;
+  city?: string | null;
   occupation?: string | null;
   monthly_income?: number;
   notes?: string | null;
