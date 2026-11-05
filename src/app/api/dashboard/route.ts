@@ -88,6 +88,11 @@ export async function GET(req: NextRequest) {
       `),
     ]);
 
+    const availableCash = settings.length > 0 ? Number(settings[0].setting_value) : 0;
+    const stats = loanStats[0] || {};
+    const pStats = paymentStats[0] || {};
+    const totalClients = clientStats[0]?.total_clients || 0;
+
     return NextResponse.json({
       success: true,
       stats: {
