@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
         (document_type, document_number, first_name, last_name, phone, email, address, city, occupation, monthly_income, notes, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVO')`,
       [
-        cleanDoc ? (document_type || 'CC') : null,
+        document_type || 'CC',
         cleanDoc,
         String(first_name).trim(),
         last_name ? String(last_name).trim() : '',
@@ -107,8 +107,8 @@ export async function POST(req: NextRequest) {
       ]
     );
 
-    // Auditoría
-    await query(
+    // Auditoría (no bloqueante)
+    query(
       'INSERT INTO audit_logs (user_id, action, entity, entity_id, details) VALUES (?, ?, ?, ?, ?)',
       [
         admin.id,
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
         String(insertResult.insertId),
         JSON.stringify({ name: `${first_name} ${last_name || ''}`.trim(), document_number: cleanDoc }),
       ]
-    );
+    ).catch((err) => console.error('Error logging audit for client creation:', err));
 
     return NextResponse.json({
       success: true,
@@ -126,6 +126,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error creating client:', error);
-    return NextResponse.json({ error: 'Error al registrar cliente.' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Error al registrar cliente.' }, { status: 500 });
   }
 }
