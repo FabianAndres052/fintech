@@ -12,7 +12,21 @@ export function getPool(): mysql.Pool {
 
     if (databaseUrl) {
       // Soporte directo para cadenas completas de conexión (TiDB Cloud, Railway, Aiven, Vercel Storage)
-      globalForDb.mysqlPool = mysql.createPool(databaseUrl);
+      const isSsl =
+        process.env.DB_SSL === 'true' ||
+        databaseUrl.includes('tidbcloud') ||
+        databaseUrl.includes('aiven') ||
+        databaseUrl.includes('ssl=');
+
+      globalForDb.mysqlPool = mysql.createPool({
+        uri: databaseUrl,
+        waitForConnections: true,
+        connectionLimit: 10,
+        maxIdle: 5,
+        idleTimeout: 30000,
+        enableKeepAlive: true,
+        ssl: isSsl ? { rejectUnauthorized: false } : undefined,
+      });
     } else {
       const host = process.env.DB_HOST || '127.0.0.1';
       const port = Number(process.env.DB_PORT) || 3306;
