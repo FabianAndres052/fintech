@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="50%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#065f46" stop-opacity="0.2"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="#090d16"/>
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="url(#grad)"/>
+  <circle cx="256" cy="256" r="180" fill="url(#glow)" stroke="#ffffff" stroke-width="4" stroke-opacity="0.2"/>
+  <path d="M256 120 L350 200 L320 200 L320 360 L192 360 L192 200 L162 200 Z" fill="#ffffff" opacity="0.15"/>
+  <text x="256" y="315" font-family="system-ui, -apple-system, sans-serif" font-size="200" font-weight="900" fill="#ffffff" text-anchor="middle">$</text>
+  <path d="M170 390 C220 420, 292 420, 342 390" stroke="#a7f3d0" stroke-width="16" stroke-linecap="round" fill="none"/>
+</svg>
