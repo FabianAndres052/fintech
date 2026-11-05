@@ -21,9 +21,10 @@ import {
   FileSpreadsheet,
   Eye,
   PlusCircle,
+  Receipt,
 } from 'lucide-react';
 import { Client } from '@/lib/types';
-import { formatCOP, formatDate } from '@/lib/calculations';
+import { formatCOP, formatDate, getLoanLabel } from '@/lib/calculations';
 import { exportToExcel } from '@/lib/exportUtils';
 import NewLoanModal from '@/components/NewLoanModal';
 import PaymentModal from '@/components/PaymentModal';
@@ -41,6 +42,7 @@ export default function ClientsPage() {
   const [isNewLoanOpen, setIsNewLoanOpen] = useState(false);
   const [selectedClientIdForLoan, setSelectedClientIdForLoan] = useState<number | undefined>(undefined);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [selectedLoanIdForPayment, setSelectedLoanIdForPayment] = useState<number | undefined>(undefined);
   const [statusFilter, setStatusFilter] = useState('TODOS');
 
   // Modal de Detalle de Cliente con Historial
@@ -368,6 +370,16 @@ export default function ClientsPage() {
                         </td>
                         <td className="py-3.5 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            {(c.active_loans_count || 0) > 0 && (
+                              <button
+                                onClick={() => handleOpenDetail(c.id)}
+                                className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer border border-emerald-500/20"
+                                title="Ver créditos individuales y abonar"
+                              >
+                                <Receipt className="w-3.5 h-3.5" />
+                                <span>Abonar</span>
+                              </button>
+                            )}
                             <button
                               onClick={() => handleOpenDetail(c.id)}
                               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
@@ -640,41 +652,50 @@ export default function ClientsPage() {
                   </div>
                 </div>
 
-                {/* Historial de Préstamos */}
+                {/* Historial de Préstamos Separados */}
                 <div>
                   <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2.5 flex items-center justify-between">
-                    <span>Historial de Préstamos ({selectedClientDetail.loans?.length || 0})</span>
+                    <span>Créditos Independientes del Cliente ({selectedClientDetail.loans?.length || 0})</span>
+                    <span className="text-[11px] text-emerald-400 font-normal">
+                      Cada crédito maneja su propio saldo, historial y abonos separados
+                    </span>
                   </h4>
                   <div className="rounded-2xl border border-slate-800 overflow-hidden">
                     <table className="w-full text-left text-xs">
                       <thead className="bg-slate-950 text-slate-400 border-b border-slate-800">
                         <tr>
                           <th className="py-2.5 px-3">Código</th>
+                          <th className="py-2.5 px-3">Obligación / Detalle</th>
                           <th className="py-2.5 px-3">Capital</th>
                           <th className="py-2.5 px-3">Total Pactado</th>
-                          <th className="py-2.5 px-3">Saldo Restante</th>
-                          <th className="py-2.5 px-3">Cuotas</th>
-                          <th className="py-2.5 px-3">Fecha Desembolso</th>
+                          <th className="py-2.5 px-3">Saldo Pendiente</th>
+                          <th className="py-2.5 px-3">Modalidad</th>
                           <th className="py-2.5 px-3">Estado</th>
+                          <th className="py-2.5 px-3 text-right">Acción</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
                         {!selectedClientDetail.loans || selectedClientDetail.loans.length === 0 ? (
                           <tr>
-                            <td colSpan={7} className="text-center py-6 text-slate-500">
+                            <td colSpan={8} className="text-center py-6 text-slate-500">
                               Este cliente no tiene préstamos registrados.
                             </td>
                           </tr>
                         ) : (
                           selectedClientDetail.loans.map((l: any) => (
                             <tr key={l.id} className="hover:bg-slate-900/80">
-                              <td className="py-2 px-3 font-mono font-bold text-emerald-400">{l.loan_code}</td>
-                              <td className="py-2 px-3 font-semibold text-white">{formatCOP(l.capital_amount)}</td>
-                              <td className="py-2 px-3 text-slate-300">{formatCOP(l.total_amount)}</td>
-                              <td className="py-2 px-3 font-bold text-teal-300">{formatCOP(l.balance_remaining)}</td>
-                              <td className="py-2 px-3 text-slate-400">{l.installments_count} ({l.periodicity})</td>
-                              <td className="py-2 px-3 text-slate-400">{formatDate(l.disbursement_date)}</td>
-                              <td className="py-2 px-3">
+                              <td className="py-2.5 px-3 font-mono font-bold text-emerald-400">{l.loan_code}</td>
+                              <td className="py-2.5 px-3">
+                                <span className="font-semibold text-white block">{getLoanLabel(l)}</span>
+                                <span className="text-[10px] text-slate-400">Desembolso: {formatDate(l.disbursement_date)}</span>
+                              </td>
+                              <td className="py-2.5 px-3 font-semibold text-white">{formatCOP(l.capital_amount)}</td>
+                              <td className="py-2.5 px-3 text-slate-300">{formatCOP(l.total_amount)}</td>
+                              <td className="py-2.5 px-3 font-bold text-emerald-400">{formatCOP(l.balance_remaining)}</td>
+                              <td className="py-2.5 px-3 text-slate-300">
+                                {l.installments_count > 0 ? `${l.installments_count} cuotas (${l.periodicity})` : 'Abonos Libres'}
+                              </td>
+                              <td className="py-2.5 px-3">
                                 <span
                                   className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                     l.status === 'ACTIVO'
@@ -688,6 +709,23 @@ export default function ClientsPage() {
                                 >
                                   {l.status}
                                 </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right">
+                                {(l.status === 'ACTIVO' || l.status === 'EN_MORA') ? (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedLoanIdForPayment(l.id);
+                                      setIsPaymentOpen(true);
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black font-bold text-[11px] inline-flex items-center gap-1 transition-colors cursor-pointer shadow-sm"
+                                    title={`Abonar exclusivamente a ${l.loan_code}`}
+                                  >
+                                    <Receipt className="w-3 h-3" />
+                                    <span>Abonar a este Crédito</span>
+                                  </button>
+                                ) : (
+                                  <span className="text-[11px] text-slate-500 font-semibold">Liquidado</span>
+                                )}
                               </td>
                             </tr>
                           ))
@@ -781,8 +819,17 @@ export default function ClientsPage() {
       />
       <PaymentModal
         isOpen={isPaymentOpen}
-        onClose={() => setIsPaymentOpen(false)}
-        onSuccess={fetchClients}
+        onClose={() => {
+          setIsPaymentOpen(false);
+          setSelectedLoanIdForPayment(undefined);
+        }}
+        onSuccess={() => {
+          fetchClients();
+          if (selectedClientDetail?.client?.id) {
+            handleOpenDetail(selectedClientDetail.client.id);
+          }
+        }}
+        defaultLoanId={selectedLoanIdForPayment}
       />
     </div>
   );

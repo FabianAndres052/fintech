@@ -263,3 +263,36 @@ export function formatDate(dateStr: string | Date | null | undefined): string {
     return String(dateStr);
   }
 }
+
+/**
+ * Obtiene una etiqueta descriptiva y clara para identificar cada crédito de forma independiente
+ */
+export function getLoanLabel(loan?: {
+  loan_code?: string;
+  notes?: string | null;
+  installments_count?: number;
+  periodicity?: string;
+  capital_amount?: number | string;
+} | null): string {
+  if (!loan) return 'Crédito';
+  const notes = loan.notes || '';
+  if (notes.includes('Deuda anterior') || notes.includes('congelad') || loan.periodicity === 'LIBRE' || Number(loan.installments_count) === 0) {
+    return 'Deuda Congelada (Abonos Libres)';
+  }
+  if (notes.includes('Crédito nuevo') || notes.includes('nuevo independiente')) {
+    return `Crédito Nuevo (${loan.installments_count || 2} cuotas)`;
+  }
+  if (notes.includes('Crédito histórico 1') || notes.includes('Crédito 1')) {
+    return `Crédito 1 (${loan.installments_count || 12} cuotas)`;
+  }
+  if (notes.includes('Crédito histórico 2') || notes.includes('Crédito 2')) {
+    return `Crédito 2 (${loan.installments_count || 28} cuotas)`;
+  }
+  if (notes.includes('Crédito histórico 3') || notes.includes('Crédito 3')) {
+    return `Crédito 3 (${loan.installments_count || 28} cuotas)`;
+  }
+  if (loan.installments_count && loan.installments_count > 0) {
+    return `Crédito (${loan.installments_count} cuotas ${loan.periodicity ? loan.periodicity.toLowerCase() : 'semanal'}es)`;
+  }
+  return loan.loan_code || 'Crédito';
+}

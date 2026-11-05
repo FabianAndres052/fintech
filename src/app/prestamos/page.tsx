@@ -25,7 +25,7 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import { Loan, Installment, Payment } from '@/lib/types';
-import { formatCOP, formatDate } from '@/lib/calculations';
+import { formatCOP, formatDate, getLoanLabel } from '@/lib/calculations';
 import { exportToExcel } from '@/lib/exportUtils';
 
 export default function LoansPage() {
@@ -268,7 +268,14 @@ export default function LoansPage() {
                         </td>
                         <td className="py-3.5 px-4">
                           <p className="font-bold text-white">{loan.client_name}</p>
-                          <p className="text-[11px] text-slate-400">CC: {loan.client_document}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                              {getLoanLabel(loan)}
+                            </span>
+                            {loan.client_document && (
+                              <span className="text-[10px] text-slate-400">CC: {loan.client_document}</span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-3.5 px-4">
                           <p className="font-bold text-white">{formatCOP(loan.capital_amount)}</p>
@@ -323,9 +330,10 @@ export default function LoansPage() {
                             {loan.status === 'ACTIVO' && (
                               <button
                                 onClick={() => handleOpenPayment(loan.id)}
-                                className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-bold transition-colors cursor-pointer"
+                                className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black text-xs font-bold transition-colors cursor-pointer shadow-sm"
+                                title={`Abonar a ${loan.loan_code}`}
                               >
-                                Cobrar
+                                Abonar a este Crédito
                               </button>
                             )}
                           </div>
@@ -354,6 +362,9 @@ export default function LoansPage() {
                 <div>
                   <h3 className="text-base font-bold text-white flex items-center gap-2">
                     <span>Préstamo {selectedLoanDetail?.loan_code}</span>
+                    <span className="text-xs px-2.5 py-0.5 rounded-md font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+                      {getLoanLabel(selectedLoanDetail)}
+                    </span>
                     <span
                       className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                         selectedLoanDetail?.status === 'ACTIVO'
@@ -409,66 +420,83 @@ export default function LoansPage() {
                   </div>
                 </div>
 
-                {/* Tabla de Amortización */}
+                {/* Tabla de Amortización o Mensaje de Deuda Congelada */}
                 <div>
                   <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2.5 flex items-center justify-between">
-                    <span>Cronograma de Cuotas & Amortización</span>
+                    <span>
+                      {selectedLoanDetail.installments && selectedLoanDetail.installments.length > 0
+                        ? 'Cronograma de Cuotas & Amortización'
+                        : 'Obligación sin cuotas programadas'}
+                    </span>
                     <span className="text-[11px] text-slate-400 font-normal">
-                      {selectedLoanDetail.installments?.length} cuotas programadas
+                      {selectedLoanDetail.installments && selectedLoanDetail.installments.length > 0
+                        ? `${selectedLoanDetail.installments.length} cuotas programadas`
+                        : 'Abonos directos al saldo de este crédito'}
                     </span>
                   </h4>
-                  <div className="rounded-2xl border border-slate-800 overflow-hidden">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-950 text-slate-400 border-b border-slate-800">
-                        <tr>
-                          <th className="py-2.5 px-3">#</th>
-                          <th className="py-2.5 px-3">Vencimiento</th>
-                          <th className="py-2.5 px-3">Capital</th>
-                          <th className="py-2.5 px-3">Interés</th>
-                          <th className="py-2.5 px-3">Valor Cuota</th>
-                          <th className="py-2.5 px-3">Abonado</th>
-                          <th className="py-2.5 px-3">Saldo</th>
-                          <th className="py-2.5 px-3">Estado</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
-                        {selectedLoanDetail.installments?.map((inst: Installment) => (
-                          <tr key={inst.id} className="hover:bg-slate-900/80">
-                            <td className="py-2 px-3 font-semibold text-slate-300">
-                              {inst.installment_number}
-                            </td>
-                            <td className="py-2 px-3 text-slate-300">{formatDate(inst.due_date)}</td>
-                            <td className="py-2 px-3 text-slate-400">{formatCOP(inst.capital_share)}</td>
-                            <td className="py-2 px-3 text-emerald-400">
-                              {formatCOP(inst.interest_share)}
-                            </td>
-                            <td className="py-2 px-3 font-bold text-white">
-                              {formatCOP(inst.total_amount)}
-                            </td>
-                            <td className="py-2 px-3 text-emerald-300">{formatCOP(inst.paid_amount)}</td>
-                            <td className="py-2 px-3 font-semibold text-slate-200">
-                              {formatCOP(inst.balance)}
-                            </td>
-                            <td className="py-2 px-3">
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                  inst.status === 'PAGADA'
-                                    ? 'bg-emerald-500/20 text-emerald-400'
-                                    : inst.status === 'PARCIAL'
-                                    ? 'bg-amber-500/20 text-amber-300'
-                                    : inst.status === 'VENCIDA'
-                                    ? 'bg-rose-500/20 text-rose-400'
-                                    : 'bg-slate-800 text-slate-400'
-                                }`}
-                              >
-                                {inst.status}
-                              </span>
-                            </td>
+                  {(!selectedLoanDetail.installments || selectedLoanDetail.installments.length === 0) ? (
+                    <div className="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-900/40 text-xs space-y-1.5">
+                      <p className="font-bold text-emerald-300">
+                        Obligación con Intereses Congelados — Modalidad Abonos Libres
+                      </p>
+                      <p className="text-slate-300 text-[11px]">
+                        Esta obligación no genera cuotas ni vencimientos periódicos obligatorios. Todo abono ingresado reduce directamente el saldo pendiente de esta deuda sin alterar otras obligaciones del cliente. Consulte abajo el historial cronológico de los abonos registrados.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-slate-800 overflow-hidden">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-950 text-slate-400 border-b border-slate-800">
+                          <tr>
+                            <th className="py-2.5 px-3">#</th>
+                            <th className="py-2.5 px-3">Vencimiento</th>
+                            <th className="py-2.5 px-3">Capital</th>
+                            <th className="py-2.5 px-3">Interés</th>
+                            <th className="py-2.5 px-3">Valor Cuota</th>
+                            <th className="py-2.5 px-3">Abonado</th>
+                            <th className="py-2.5 px-3">Saldo</th>
+                            <th className="py-2.5 px-3">Estado</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
+                          {selectedLoanDetail.installments?.map((inst: Installment) => (
+                            <tr key={inst.id} className="hover:bg-slate-900/80">
+                              <td className="py-2 px-3 font-semibold text-slate-300">
+                                {inst.installment_number}
+                              </td>
+                              <td className="py-2 px-3 text-slate-300">{formatDate(inst.due_date)}</td>
+                              <td className="py-2 px-3 text-slate-400">{formatCOP(inst.capital_share)}</td>
+                              <td className="py-2 px-3 text-emerald-400">
+                                {formatCOP(inst.interest_share)}
+                              </td>
+                              <td className="py-2 px-3 font-bold text-white">
+                                {formatCOP(inst.total_amount)}
+                              </td>
+                              <td className="py-2 px-3 text-emerald-300">{formatCOP(inst.paid_amount)}</td>
+                              <td className="py-2 px-3 font-semibold text-slate-200">
+                                {formatCOP(inst.balance)}
+                              </td>
+                              <td className="py-2 px-3">
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                    inst.status === 'PAGADA'
+                                      ? 'bg-emerald-500/20 text-emerald-400'
+                                      : inst.status === 'PARCIAL'
+                                      ? 'bg-amber-500/20 text-amber-300'
+                                      : inst.status === 'VENCIDA'
+                                      ? 'bg-rose-500/20 text-rose-400'
+                                      : 'bg-slate-800 text-slate-400'
+                                  }`}
+                                >
+                                  {inst.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
 
                 {/* Historial de Pagos Registrados */}
@@ -546,9 +574,10 @@ export default function LoansPage() {
                           setDetailModalOpen(false);
                           handleOpenPayment(selectedLoanDetail.id);
                         }}
-                        className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-colors cursor-pointer"
+                        className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-colors cursor-pointer flex items-center gap-1.5 shadow-md"
                       >
-                        Abonar a este Préstamo
+                        <Receipt className="w-3.5 h-3.5" />
+                        <span>Abonar a este Crédito</span>
                       </button>
                     )}
                   </div>

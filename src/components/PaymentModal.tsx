@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Receipt, AlertCircle, CheckCircle2, DollarSign, CreditCard } from 'lucide-react';
-import { formatCOP } from '@/lib/calculations';
+import { formatCOP, getLoanLabel } from '@/lib/calculations';
 import { Loan } from '@/lib/types';
 import ReceiptModal from './ReceiptModal';
 
@@ -75,6 +75,21 @@ export default function PaymentModal({
 
   const selectedLoan = activeLoans.find((l) => String(l.id) === selectedLoanId);
 
+  // Agrupar préstamos por cliente para que el administrador seleccione exactamente a qué crédito abonar
+  const clientGroups = Object.values(
+    activeLoans.reduce((acc: { [key: string]: { clientName: string; loans: Loan[] } }, loan) => {
+      const key = String(loan.client_id || loan.client_name || 'general');
+      if (!acc[key]) {
+        acc[key] = {
+          clientName: loan.client_name || 'Cliente',
+          loans: [],
+        };
+      }
+      acc[key].loans.push(loan);
+      return acc;
+    }, {})
+  );
+
   const handleLoanChange = (loanId: string) => {
     setSelectedLoanId(loanId);
     const l = activeLoans.find((x) => String(x.id) === loanId);
@@ -99,7 +114,7 @@ export default function PaymentModal({
 
     if (selectedLoan && numAmount > Number(selectedLoan.balance_remaining)) {
       setError(
-        `El monto ($ ${new Intl.NumberFormat('es-CO').format(numAmount)}) supera el saldo restante del préstamo ($ ${new Intl.NumberFormat('es-CO').format(selectedLoan.balance_remaining)}).`
+        `El monto ($ ${new Intl.NumberFormat('es-CO').format(numAmount)}) supera el saldo restante del crédito seleccionado ($ ${new Intl.NumberFormat('es-CO').format(selectedLoan.balance_remaining)}).`
       );
       return;
     }
@@ -129,14 +144,14 @@ export default function PaymentModal({
         paymentCode: data.payment.paymentCode,
         clientName: selectedLoan?.client_name || 'Cliente',
         clientDocument: selectedLoan?.client_document || 'N/A',
-        loanCode: selectedLoan?.loan_code || 'PRE',
+        loanCode: `${selectedLoan?.loan_code || 'PRE'} — ${getLoanLabel(selectedLoan)}`,
         amountPaid: data.payment.amountPaid,
         capitalPaid: data.payment.capitalPaid,
         interestPaid: data.payment.interestPaid,
         newLoanBalance: data.payment.newLoanBalance,
         paymentMethod: paymentMethod,
         paymentDate: data.payment.paymentDate,
-        notes: notes,
+        notes: notes || `Abono a ${getLoanLabel(selectedLoan)}`,
       });
 
       setShowReceipt(true);
@@ -196,42 +211,75 @@ export default function PaymentModal({
                   className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-neutral-100 focus:outline-none focus:border-emerald-500"
                   required
                 >
-                  <option value="">Seleccione un préstamo activo...</option>
-                  {activeLoans.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.loan_code} — {l.client_name} (Saldo: {formatCOP(l.balance_remaining)})
-                    </option>
+                  <option value="">Seleccione el crédito específico al cual abonar...</option>
+                  {clientGroups.map((group) => (
+                    <optgroup key={group.clientName} label={`${group.clientName} (${group.loans.length} obligación${group.loans.length > 1 ? 'es' : ''})`}>
+                      {group.loans.map((l) => (
+                        <option key={l.id} value={l.id}>
+                          {l.loan_code} — {getLoanLabel(l)} | Saldo: {formatCOP(l.balance_remaining)}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               )}
             </div>
 
-            {/* Tarjeta de estado del préstamo seleccionado */}
+            {/* Tarjeta de estado del crédito seleccionado (datos separados) */}
             {selectedLoan && (
-              <div className="p-3.5 rounded-2xl bg-black/60 border border-neutral-800 space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-neutral-400">Saldo Pendiente Global:</span>
-                  <span className="font-extrabold text-emerald-400">
-                    {formatCOP(selectedLoan.balance_remaining)}
+              <div className="p-4 rounded-2xl bg-black/60 border border-emerald-900/50 space-y-2.5">
+                <div className="flex items-center justify-between pb-2.5 border-b border-neutral-800">
+                  <div>
+                    <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">
+                      Crédito Destinatario del Abono
+                    </span>
+                    <p className="font-bold text-white text-sm">
+                      {selectedLoan.loan_code} — {getLoanLabel(selectedLoan)}
+                    </p>
+                    <p className="text-xs text-neutral-400">
+                      Cliente: <strong className="text-neutral-200">{selectedLoan.client_name}</strong>
+                    </p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    {selectedLoan.status}
                   </span>
                 </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-neutral-400">Cuota Programada ({selectedLoan.periodicity.toLowerCase()}):</span>
-                  <span className="font-bold text-white">
-                    {formatCOP(selectedLoan.payment_per_installment)}
-                  </span>
+                <div className="grid grid-cols-2 gap-2.5 pt-1 text-xs">
+                  <div>
+                    <span className="text-neutral-400 text-[11px]">Saldo Pendiente de este Crédito:</span>
+                    <p className="font-extrabold text-emerald-400 text-base">
+                      {formatCOP(selectedLoan.balance_remaining)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-neutral-400 text-[11px]">Modalidad del Crédito:</span>
+                    <p className="font-bold text-white">
+                      {selectedLoan.installments_count > 0
+                        ? `${formatCOP(selectedLoan.payment_per_installment)} (${selectedLoan.periodicity.toLowerCase()})`
+                        : 'Abonos Libres a Capital (Sin cuotas)'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-neutral-400 text-[11px]">Capital Inicial Desembolsado:</span>
+                    <p className="text-neutral-300 font-semibold">{formatCOP(selectedLoan.capital_amount)}</p>
+                  </div>
+                  <div>
+                    <span className="text-neutral-400 text-[11px]">Total Pactado en este Crédito:</span>
+                    <p className="text-neutral-300 font-semibold">{formatCOP(selectedLoan.total_amount)}</p>
+                  </div>
                 </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-neutral-400">Capital Recuperado:</span>
-                  <span className="text-neutral-300">{formatCOP(selectedLoan.capital_collected)}</span>
-                </div>
+                {selectedLoan.notes && (
+                  <p className="text-[11px] text-neutral-400 pt-2 border-t border-neutral-800/80 italic">
+                    {selectedLoan.notes}
+                  </p>
+                )}
               </div>
             )}
 
             {/* Monto del abono */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-neutral-300 flex items-center justify-between">
-                <span>Monto a Recaudar (COP)</span>
+                <span>Monto del Abono / Recaudo (COP)</span>
                 {selectedLoan && (
                   <span className="text-[11px] text-neutral-400">
                     Máx: {formatCOP(selectedLoan.balance_remaining)}
@@ -245,37 +293,65 @@ export default function PaymentModal({
                   step="1000"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Ej: 50000"
+                  placeholder="Ej: 85000"
                   className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-base font-bold text-emerald-400 focus:outline-none focus:border-emerald-500"
                   required
                 />
               </div>
 
-              {/* Botones de sugerencia rápida */}
+              {/* Botones de sugerencia rápida según el tipo de crédito */}
               {selectedLoan && (
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickAmount(Number(selectedLoan.payment_per_installment))}
-                    className="px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-[11px] text-neutral-300 cursor-pointer"
-                  >
-                    1 Cuota ({formatCOP(selectedLoan.payment_per_installment)})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleQuickAmount(Number(selectedLoan.payment_per_installment) * 2)
-                    }
-                    className="px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-[11px] text-neutral-300 cursor-pointer"
-                  >
-                    2 Cuotas ({formatCOP(Number(selectedLoan.payment_per_installment) * 2)})
-                  </button>
+                  {Number(selectedLoan.payment_per_installment) > 0 ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickAmount(Number(selectedLoan.payment_per_installment))}
+                        className="px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-[11px] text-neutral-300 cursor-pointer"
+                      >
+                        1 Cuota ({formatCOP(selectedLoan.payment_per_installment)})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleQuickAmount(Number(selectedLoan.payment_per_installment) * 2)
+                        }
+                        className="px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-[11px] text-neutral-300 cursor-pointer"
+                      >
+                        2 Cuotas ({formatCOP(Number(selectedLoan.payment_per_installment) * 2)})
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickAmount(200000)}
+                        className="px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-[11px] text-neutral-300 cursor-pointer"
+                      >
+                        $ 200.000
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickAmount(400000)}
+                        className="px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-[11px] text-neutral-300 cursor-pointer"
+                      >
+                        $ 400.000
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickAmount(700000)}
+                        className="px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-[11px] text-neutral-300 cursor-pointer"
+                      >
+                        $ 700.000
+                      </button>
+                    </>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleQuickAmount(Number(selectedLoan.balance_remaining))}
                     className="px-2.5 py-1 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-500/40 text-[11px] text-emerald-400 font-semibold cursor-pointer"
                   >
-                    Liquidar Total ({formatCOP(selectedLoan.balance_remaining)})
+                    Liquidar Saldo ({formatCOP(selectedLoan.balance_remaining)})
                   </button>
                 </div>
               )}
