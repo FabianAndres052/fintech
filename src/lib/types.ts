@@ -2,7 +2,7 @@ export type Role = 'SUPERADMIN' | 'ADMIN';
 export type ClientStatus = 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO';
 export type LoanStatus = 'ACTIVO' | 'COMPLETADO' | 'EN_MORA' | 'CANCELADO';
 export type InstallmentStatus = 'PENDIENTE' | 'PARCIAL' | 'PAGADA' | 'VENCIDA';
-export type Periodicity = 'SEMANAL' | 'QUINCENAL' | 'MENSUAL';
+export type Periodicity = 'SEMANAL' | 'QUINCENAL' | 'MENSUAL' | 'LIBRE';
 export type MovementType = 
   | 'INGRESO' 
   | 'GASTO' 

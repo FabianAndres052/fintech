@@ -278,10 +278,12 @@ export default function LoansPage() {
                         </td>
                         <td className="py-3.5 px-4">
                           <p className="font-semibold text-white">
-                            {formatCOP(loan.payment_per_installment)}
+                            {loan.installments_count > 0 ? formatCOP(loan.payment_per_installment) : 'Abonos Libres'}
                           </p>
-                          <p className="text-[10px] text-slate-400">
-                            {loan.installments_count} cuotas {loan.periodicity.toLowerCase()}s
+                          <p className="text-[10px] text-neutral-400">
+                            {loan.installments_count > 0
+                              ? `${loan.installments_count} cuotas ${loan.periodicity.toLowerCase()}s`
+                              : 'Deuda sin cuotas programadas'}
                           </p>
                         </td>
                         <td className="py-3.5 px-4 font-extrabold text-teal-300">

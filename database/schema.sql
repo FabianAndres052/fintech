@@ -82,9 +82,9 @@ CREATE TABLE `loans` (
   `balance_remaining` DECIMAL(14, 2) NOT NULL,        -- Saldo pendiente global por cobrar
   `capital_collected` DECIMAL(14, 2) NOT NULL DEFAULT 0.00,   -- Capital real retornado
   `interest_collected` DECIMAL(14, 2) NOT NULL DEFAULT 0.00,  -- Interés real cobrado (ganancia realizada)
-  `installments_count` INT UNSIGNED NOT NULL,         -- Número de cuotas (<=20 si <1M, <=28 si >=1M)
-  `periodicity` ENUM('SEMANAL', 'QUINCENAL', 'MENSUAL') NOT NULL DEFAULT 'SEMANAL',
-  `payment_per_installment` DECIMAL(14, 2) NOT NULL,  -- Valor de la cuota periódica
+  `installments_count` INT UNSIGNED NOT NULL DEFAULT 0, -- Número de cuotas (0 si es deuda libre/congelada)
+  `periodicity` ENUM('SEMANAL', 'QUINCENAL', 'MENSUAL', 'LIBRE') NOT NULL DEFAULT 'SEMANAL',
+  `payment_per_installment` DECIMAL(14, 2) NOT NULL DEFAULT 0.00,  -- Valor de la cuota periódica (0 si es libre)
   `disbursement_date` DATE NOT NULL,                  -- Fecha de desembolso
   `start_date` DATE NOT NULL,                         -- Fecha de primera cuota
   `end_date` DATE NOT NULL,                           -- Fecha prevista de culminación

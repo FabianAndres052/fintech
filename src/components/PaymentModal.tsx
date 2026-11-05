@@ -57,14 +57,14 @@ export default function PaymentModal({
               if (defaultAmount) {
                 setAmount(String(defaultAmount));
               } else if (l) {
-                setAmount(String(l.payment_per_installment));
+                setAmount(Number(l.payment_per_installment) > 0 ? String(l.payment_per_installment) : '');
               }
             } else if (payable.length > 0 && !selectedLoanId) {
               setSelectedLoanId(String(payable[0].id));
               if (defaultAmount) {
                 setAmount(String(defaultAmount));
               } else {
-                setAmount(String(payable[0].payment_per_installment));
+                setAmount(Number(payable[0].payment_per_installment) > 0 ? String(payable[0].payment_per_installment) : '');
               }
             }
           }
@@ -79,7 +79,7 @@ export default function PaymentModal({
     setSelectedLoanId(loanId);
     const l = activeLoans.find((x) => String(x.id) === loanId);
     if (l) {
-      setAmount(String(l.payment_per_installment));
+      setAmount(Number(l.payment_per_installment) > 0 ? String(l.payment_per_installment) : '');
     }
   };
 

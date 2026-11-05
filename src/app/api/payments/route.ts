@@ -97,68 +97,71 @@ export async function POST(req: NextRequest) {
       let installmentsQuery = 'SELECT * FROM installments WHERE loan_id = ? AND status IN ("PENDIENTE", "PARCIAL", "VENCIDA") ORDER BY installment_number ASC FOR UPDATE';
       const [pendingInstallments]: any = await conn.query(installmentsQuery, [loan_id]);
 
-      if (pendingInstallments.length === 0) {
-        throw new Error('No hay cuotas pendientes para este préstamo.');
-      }
-
-      // 3. Aplicar pago en cascada sobre las cuotas y calcular separación real de Capital vs Intereses
+      // 3. Aplicar pago: si tiene cuotas aplica en cascada; si no tiene cuotas (deuda congelada/libre) aplica directo al saldo
       let remainingToApply = amountPaid;
       let totalCapitalPaid = 0;
       let totalInterestPaid = 0;
       let targetInstallmentId: number | null = installment_id ? Number(installment_id) : null;
 
-      for (const inst of pendingInstallments) {
-        if (remainingToApply <= 0) break;
+      if (pendingInstallments.length === 0) {
+        // Obligación sin cuotas programadas (ej. deuda congelada de Kike): todo el abono reduce directamente el saldo
+        totalCapitalPaid = amountPaid;
+        totalInterestPaid = 0;
+        targetInstallmentId = null;
+      } else {
+        for (const inst of pendingInstallments) {
+          if (remainingToApply <= 0) break;
 
-        // Si se especificó una cuota concreta y estamos en ella, o si no se especificó y vamos en orden
-        const instBalance = Number(inst.balance);
-        const applyToInst = Math.min(remainingToApply, instBalance);
+          // Si se especificó una cuota concreta y estamos en ella, o si no se especificó y vamos en orden
+          const instBalance = Number(inst.balance);
+          const applyToInst = Math.min(remainingToApply, instBalance);
 
-        // Proporción exacta de capital e interés de esta cuota
-        const instTotal = Number(inst.total_amount);
-        const remainingCap = Math.max(0, Number(inst.capital_share) - Number(inst.capital_paid));
-        const remainingInt = Math.max(0, Number(inst.interest_share) - Number(inst.interest_paid));
+          // Proporción exacta de capital e interés de esta cuota
+          const instTotal = Number(inst.total_amount);
+          const remainingCap = Math.max(0, Number(inst.capital_share) - Number(inst.capital_paid));
+          const remainingInt = Math.max(0, Number(inst.interest_share) - Number(inst.interest_paid));
 
-        let capPortion: number;
-        let intPortion: number;
+          let capPortion: number;
+          let intPortion: number;
 
-        if (applyToInst >= instBalance) {
-          // Si liquida la cuota por completo, saldar exactamente los remanentes
-          capPortion = remainingCap;
-          intPortion = Math.max(0, Math.round((applyToInst - capPortion) * 100) / 100);
-        } else {
-          // Abono parcial proporcional
-          const capRatio = instTotal > 0 ? Number(inst.capital_share) / instTotal : 0.8;
-          capPortion = Math.min(remainingCap, Math.round((applyToInst * capRatio) * 100) / 100);
-          intPortion = Math.max(0, Math.round((applyToInst - capPortion) * 100) / 100);
+          if (applyToInst >= instBalance) {
+            // Si liquida la cuota por completo, saldar exactamente los remanentes
+            capPortion = remainingCap;
+            intPortion = Math.max(0, Math.round((applyToInst - capPortion) * 100) / 100);
+          } else {
+            // Abono parcial proporcional
+            const capRatio = instTotal > 0 ? Number(inst.capital_share) / instTotal : 0.8;
+            capPortion = Math.min(remainingCap, Math.round((applyToInst * capRatio) * 100) / 100);
+            intPortion = Math.max(0, Math.round((applyToInst - capPortion) * 100) / 100);
+          }
+
+          totalCapitalPaid += capPortion;
+          totalInterestPaid += intPortion;
+
+          const newInstPaid = Number(inst.paid_amount) + applyToInst;
+          const newInstBalance = Math.max(0, Math.round((instBalance - applyToInst) * 100) / 100);
+          const newInstStatus = newInstBalance <= 0 ? 'PAGADA' : 'PARCIAL';
+          const newCapPaid = Number(inst.capital_paid) + capPortion;
+          const newIntPaid = Number(inst.interest_paid) + intPortion;
+
+          await conn.query(
+            `UPDATE installments SET 
+              paid_amount = ?, 
+              balance = ?, 
+              capital_paid = ?, 
+              interest_paid = ?, 
+              status = ?, 
+              paid_date = NOW() 
+             WHERE id = ?`,
+            [newInstPaid, newInstBalance, newCapPaid, newIntPaid, newInstStatus, inst.id]
+          );
+
+          if (!targetInstallmentId) {
+            targetInstallmentId = inst.id;
+          }
+
+          remainingToApply -= applyToInst;
         }
-
-        totalCapitalPaid += capPortion;
-        totalInterestPaid += intPortion;
-
-        const newInstPaid = Number(inst.paid_amount) + applyToInst;
-        const newInstBalance = Math.max(0, Math.round((instBalance - applyToInst) * 100) / 100);
-        const newInstStatus = newInstBalance <= 0 ? 'PAGADA' : 'PARCIAL';
-        const newCapPaid = Number(inst.capital_paid) + capPortion;
-        const newIntPaid = Number(inst.interest_paid) + intPortion;
-
-        await conn.query(
-          `UPDATE installments SET 
-            paid_amount = ?, 
-            balance = ?, 
-            capital_paid = ?, 
-            interest_paid = ?, 
-            status = ?, 
-            paid_date = NOW() 
-           WHERE id = ?`,
-          [newInstPaid, newInstBalance, newCapPaid, newIntPaid, newInstStatus, inst.id]
-        );
-
-        if (!targetInstallmentId) {
-          targetInstallmentId = inst.id;
-        }
-
-        remainingToApply -= applyToInst;
       }
 
       // 4. Actualizar préstamo (reducir saldo, aumentar recaudos)
