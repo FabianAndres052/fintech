@@ -33,7 +33,15 @@ export default function DashboardPage() {
   const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [adminUser, setAdminUser] = useState<any>(null);
+  const [adminUser, setAdminUser] = useState<any>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('admin_user');
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return null;
+  });
 
   // Modales
   const [isNewLoanOpen, setIsNewLoanOpen] = useState(false);
@@ -42,19 +50,24 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      // Verificar sesión admin
-      const authRes = await fetch('/api/auth/me');
-      const authData = await authRes.json();
+      // Peticiones paralelas de alta velocidad
+      const [authRes, dashRes] = await Promise.all([
+        fetch('/api/auth/me'),
+        fetch('/api/dashboard'),
+      ]);
+
+      const authData = await authRes.json().catch(() => ({}));
       if (!authRes.ok || !authData.authenticated) {
         router.push('/login');
         return;
       }
       setAdminUser(authData.admin);
+      if (typeof window !== 'undefined' && authData.admin) {
+        localStorage.setItem('admin_user', JSON.stringify(authData.admin));
+      }
 
-      // Cargar estadísticas
-      const res = await fetch('/api/dashboard');
-      const data = await res.json();
-      if (data.success) {
+      const data = await dashRes.json().catch(() => ({}));
+      if (data.success && data.stats) {
         setStats(data.stats);
       }
     } catch (err) {
@@ -69,8 +82,15 @@ export default function DashboardPage() {
   }, []);
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/login');
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
+    if (typeof window !== 'undefined') {
+      localStorage.clear();
+      sessionStorage.clear();
+      document.cookie = 'admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0;';
+    }
+    router.push('/login?logout=1');
   };
 
   if (loading) {

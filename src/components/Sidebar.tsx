@@ -28,7 +28,18 @@ interface SidebarProps {
 export default function Sidebar({ adminName = 'Ana Posada', adminEmail = 'AnaPosada55', onLogout }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState({ name: adminName, email: adminEmail });
+  const [user, setUser] = useState<{ name: string; email: string }>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('admin_user');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          return { name: parsed.name || adminName, email: parsed.username || parsed.email || adminEmail };
+        }
+      } catch {}
+    }
+    return { name: adminName, email: adminEmail };
+  });
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {

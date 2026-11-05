@@ -85,10 +85,19 @@ export async function withTransaction<T>(
   }
 }
 
+let lastSyncTime = 0;
+const SYNC_INTERVAL_MS = 2 * 60 * 1000; // Máximo 1 sincronización cada 2 minutos en caché
+
 /**
  * Sincroniza automáticamente los estados de mora de cuotas y préstamos en tiempo real
  */
-export async function syncOverdueStatus(): Promise<void> {
+export async function syncOverdueStatus(force = false): Promise<void> {
+  const now = Date.now();
+  if (!force && now - lastSyncTime < SYNC_INTERVAL_MS) {
+    return;
+  }
+  lastSyncTime = now;
+
   try {
     // 1. Marcar cuotas vencidas cuya fecha sea anterior a hoy y no estén completamente pagadas
     await query(`

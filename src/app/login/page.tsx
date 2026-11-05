@@ -27,22 +27,59 @@ export default function LoginPage() {
     setLoggedOutNotice(false);
     setLoading(true);
 
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
+    const attemptLogin = async (retriesLeft = 1): Promise<any> => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Error al iniciar sesión');
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: username.trim(), password }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || 'Credenciales inválidas o error de conexión.');
+        }
+        return data;
+      } catch (err: any) {
+        if (retriesLeft > 0 && (err.name === 'AbortError' || err.message?.toLowerCase().includes('fetch'))) {
+          // Reintento automático silencioso para mitigar arranque en frío (cold start)
+          return attemptLogin(retriesLeft - 1);
+        }
+        throw err;
+      }
+    };
+
+    try {
+      const data = await attemptLogin(1);
+
+      // Guardar token y credenciales localmente para carga inmediata
+      if (typeof window !== 'undefined') {
+        if (data.token) {
+          document.cookie = `admin_token=${data.token}; path=/; max-age=604800; SameSite=Lax${
+            window.location.protocol === 'https:' ? '; Secure' : ''
+          }`;
+          try {
+            localStorage.setItem('admin_token', data.token);
+            if (data.admin) {
+              localStorage.setItem('admin_user', JSON.stringify(data.admin));
+            }
+          } catch {}
+        }
       }
 
       // Reemplazo limpio hacia el dashboard
       window.location.replace('/');
     } catch (err: any) {
-      setError(err.message);
+      if (err.name === 'AbortError' || err.message?.toLowerCase().includes('fetch')) {
+        setError('El servidor está inicializando la conexión en la nube. Por favor intenta ingresar de nuevo.');
+      } else {
+        setError(err.message || 'Error al iniciar sesión.');
+      }
     } finally {
       setLoading(false);
     }

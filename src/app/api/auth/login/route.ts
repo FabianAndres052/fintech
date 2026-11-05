@@ -45,21 +45,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Actualizar última fecha de inicio de sesión
-    await query('UPDATE administrators SET last_login = NOW() WHERE id = ?', [admin.id]);
-
-    // Registrar en auditoría
-    await query(
-      'INSERT INTO audit_logs (user_id, action, entity, entity_id, details, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
-      [
-        admin.id,
-        'LOGIN_SUCCESS',
-        'administrators',
-        String(admin.id),
-        JSON.stringify({ email: admin.email }),
-        req.headers.get('x-forwarded-for') || '127.0.0.1',
-      ]
-    );
+    // Actualizar última fecha de login y auditoría en paralelo para acelerar la respuesta
+    Promise.allSettled([
+      query('UPDATE administrators SET last_login = NOW() WHERE id = ?', [admin.id]),
+      query(
+        'INSERT INTO audit_logs (user_id, action, entity, entity_id, details, ip_address) VALUES (?, ?, ?, ?, ?, ?)',
+        [
+          admin.id,
+          'LOGIN_SUCCESS',
+          'administrators',
+          String(admin.id),
+          JSON.stringify({ email: admin.email, username: admin.username }),
+          req.headers.get('x-forwarded-for') || '127.0.0.1',
+        ]
+      ),
+    ]).catch(() => {});
 
     const token = signAdminToken({
       id: admin.id,
