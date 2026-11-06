@@ -6,18 +6,22 @@ import { send2FACodeEmail } from '@/lib/email';
 export const dynamic = 'force-dynamic';
 
 async function ensure2FATable() {
-  await query(`
-    CREATE TABLE IF NOT EXISTS admin_2fa_codes (
-      id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      email VARCHAR(150) NOT NULL,
-      code VARCHAR(10) NOT NULL,
-      purpose VARCHAR(50) NOT NULL DEFAULT 'CHANGE_PASSWORD',
-      expires_at DATETIME NOT NULL,
-      used TINYINT(1) NOT NULL DEFAULT 0,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      INDEX idx_2fa_lookup (email, code, used)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  `);
+  try {
+    await query(`
+      CREATE TABLE IF NOT EXISTS admin_2fa_codes (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(150) NOT NULL,
+        code VARCHAR(10) NOT NULL,
+        purpose VARCHAR(50) NOT NULL DEFAULT 'CHANGE_PASSWORD',
+        expires_at DATETIME NOT NULL,
+        used TINYINT(1) NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_2fa_lookup (email, code, used)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+  } catch (err) {
+    console.warn('Aviso al verificar tabla admin_2fa_codes:', err);
+  }
 }
 
 // POST: Solicitar código 2FA
@@ -79,7 +83,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Error generando código 2FA:', error);
     return NextResponse.json(
-      { error: 'Error al generar código de seguridad 2FA.' },
+      { error: error?.message || 'Error al generar código de seguridad 2FA.' },
       { status: 500 }
     );
   }
@@ -192,7 +196,7 @@ export async function PUT(req: NextRequest) {
   } catch (error: any) {
     console.error('Error verificando 2FA y actualizando contraseña:', error);
     return NextResponse.json(
-      { error: 'Error al validar el código 2FA o actualizar la contraseña.' },
+      { error: error?.message || 'Error al validar el código 2FA o actualizar la contraseña.' },
       { status: 500 }
     );
   }
