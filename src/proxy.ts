@@ -27,8 +27,7 @@ export function proxy(request: NextRequest) {
   const isPublicApi =
     pathname.startsWith('/api/auth/login') ||
     pathname.startsWith('/api/auth/logout') ||
-    pathname.startsWith('/api/auth/2fa') ||
-    pathname === '/api/superadmin/setup';
+    pathname.startsWith('/api/auth/2fa');
 
   // Si el usuario ya está autenticado con token válido e intenta acceder a /login, redirigir al dashboard
   if (isLoginPage && hasValidToken) {
