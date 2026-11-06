@@ -34,6 +34,7 @@ export default function ContabilidadPage() {
   const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [cashBalance, setCashBalance] = useState(0);
+  const [activePortfolio, setActivePortfolio] = useState(0);
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'resumen' | 'movimientos' | 'reportes'>('resumen');
@@ -47,12 +48,18 @@ export default function ContabilidadPage() {
         return;
       }
 
-      const res = await fetch('/api/cash');
-      const cashRes = await res.json();
+      const [cashRes, dashRes] = await Promise.all([
+        fetch('/api/cash').then((r) => r.json()),
+        fetch('/api/dashboard').then((r) => r.json()),
+      ]);
+
       if (cashRes.success) {
         setData(cashRes.summary);
         setCashBalance(cashRes.currentCash);
         setRecentMovements(cashRes.movements || []);
+      }
+      if (dashRes.success && dashRes.stats) {
+        setActivePortfolio(dashRes.stats.active_portfolio || 0);
       }
     } catch (err) {
       console.error(err);
@@ -225,7 +232,7 @@ export default function ContabilidadPage() {
                     </div>
                   </div>
                   <p className="text-lg sm:text-xl font-black text-emerald-400">
-                    {formatCOP(totalReceived || 5518000)}
+                    {formatCOP(totalReceived)}
                   </p>
                 </div>
 
@@ -241,7 +248,7 @@ export default function ContabilidadPage() {
                     </div>
                   </div>
                   <p className="text-lg sm:text-xl font-black text-white">
-                    {formatCOP(netCapitalInFund > 0 ? 19282000 : 17668000)}
+                    {formatCOP(activePortfolio)}
                   </p>
                 </div>
 
@@ -257,7 +264,7 @@ export default function ContabilidadPage() {
                     </div>
                   </div>
                   <p className="text-lg sm:text-xl font-black text-[#A78BFA]">
-                    {formatCOP(grossProfit > 0 ? grossProfit : 4320000)}
+                    {formatCOP(grossProfit)}
                   </p>
                 </div>
 
