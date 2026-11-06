@@ -114,33 +114,33 @@ export default function PagosPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-black text-neutral-100">
+    <div className="flex min-h-screen bg-[#0B0B0F] text-neutral-100">
       <Sidebar />
 
-      <div className="flex-1 flex flex-col min-w-0 pb-20 lg:pb-8">
+      <div className="flex-1 flex flex-col min-w-0 pb-24 lg:pb-8">
         <Header
-          title="Registro de Pagos & Recaudos"
-          subtitle="Historial detallado de cobros, recibos oficiales y separación de capital vs intereses"
+          title="Historial de Pagos & Recaudos"
+          subtitle="Registro de transacciones, recibos oficiales y separación de capital vs intereses"
           availableCash={availableCash}
           onNewPayment={() => setIsPaymentOpen(true)}
         />
 
-        <main className="flex-1 p-4 sm:p-8 space-y-6 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 sm:p-7 space-y-6 max-w-7xl mx-auto w-full">
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-neutral-950/80 rounded-2xl p-4 border border-neutral-800">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="bg-[#121118] rounded-3xl p-4 sm:p-5 border border-[#2D2545]">
               <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
                 Total Recaudado (Selección)
               </span>
               <p className="text-xl sm:text-2xl font-black text-white mt-1">
                 {formatCOP(totalCollected)}
               </p>
-              <span className="text-[10px] text-neutral-400">
+              <span className="text-[10px] text-[#A78BFA]">
                 {filteredPayments.length} transacciones registradas
               </span>
             </div>
 
-            <div className="bg-neutral-950/80 rounded-2xl p-4 border border-neutral-800">
+            <div className="bg-[#121118] rounded-3xl p-4 sm:p-5 border border-[#2D2545]">
               <span className="text-[11px] font-semibold text-neutral-300 uppercase tracking-wider">
                 Capital Retornado
               </span>
@@ -150,7 +150,7 @@ export default function PagosPage() {
               <span className="text-[10px] text-neutral-400">Recuperación de dinero prestado</span>
             </div>
 
-            <div className="bg-neutral-950/80 rounded-2xl p-4 border border-neutral-800">
+            <div className="bg-[#121118] rounded-3xl p-4 sm:p-5 border border-[#2D2545]">
               <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">
                 Intereses Ganados (Ganancia Real)
               </span>
@@ -164,20 +164,20 @@ export default function PagosPage() {
           {/* Action Bar */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div className="relative flex-1 max-w-md">
-              <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 placeholder="Buscar recibo, cliente, cédula o préstamo..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl pl-9 pr-3 py-2 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-red-600"
+                className="w-full bg-[#14121F] border border-[#2D2545] rounded-2xl pl-10 pr-3 py-2.5 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-[#8B5CF6]"
               />
             </div>
 
             <div className="flex items-center gap-2.5">
               <button
                 onClick={handleExportExcel}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-800 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-semibold bg-[#14121F] hover:bg-[#1A1828] text-neutral-300 border border-[#2D2545] transition-colors cursor-pointer"
               >
                 <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
                 <span>Excel</span>
@@ -185,7 +185,7 @@ export default function PagosPage() {
 
               <button
                 onClick={() => setIsPaymentOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition-all cursor-pointer shadow-md"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-bold bg-gradient-to-r from-[#E5092F] to-[#C40726] hover:from-[#FF1744] hover:to-[#E5092F] text-white shadow-lg shadow-red-950/60 transition-all cursor-pointer active:scale-95"
               >
                 <Receipt className="w-4 h-4" />
                 <span>Registrar Pago</span>
@@ -194,10 +194,10 @@ export default function PagosPage() {
           </div>
 
           {/* Payments Table */}
-          <div className="glass-panel rounded-3xl border border-slate-800 overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="bg-[#121118] rounded-3xl border border-[#2D2545] overflow-hidden">
+            <div className="overflow-x-auto touch-scroll">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-950/70 text-slate-400 border-b border-slate-800 uppercase tracking-wider text-[11px]">
+                <thead className="bg-[#181622] text-neutral-400 border-b border-[#2D2545] uppercase tracking-wider text-[11px]">
                   <tr>
                     <th className="py-3 px-4">Recibo</th>
                     <th className="py-3 px-4">Préstamo</th>
@@ -210,7 +210,7 @@ export default function PagosPage() {
                     <th className="py-3 px-4 text-right">Comprobante</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 bg-slate-900/30">
+                <tbody className="divide-y divide-[#221D33]/60 bg-[#121118]">
                   {filteredPayments.length === 0 ? (
                     <tr>
                       <td colSpan={9} className="text-center py-10 text-slate-500">

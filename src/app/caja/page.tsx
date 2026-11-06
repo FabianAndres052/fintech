@@ -81,10 +81,10 @@ export default function CajaPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-black text-neutral-100">
+    <div className="flex min-h-screen bg-[#0B0B0F] text-neutral-100">
       <Sidebar />
 
-      <div className="flex-1 flex flex-col min-w-0 pb-20 lg:pb-8">
+      <div className="flex-1 flex flex-col min-w-0 pb-24 lg:pb-8">
         <Header
           title="Libro Mayor de Caja & Flujo de Efectivo"
           subtitle="Control de entradas, salidas, aportes de capital y gastos operativos"
@@ -92,26 +92,26 @@ export default function CajaPage() {
           onCashMovement={() => setIsCashModalOpen(true)}
         />
 
-        <main className="flex-1 p-4 sm:p-8 space-y-6 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 sm:p-7 space-y-6 max-w-7xl mx-auto w-full">
           {/* Main Cash Balance Banner */}
-          <div className="bg-neutral-950 rounded-3xl p-6 border border-neutral-800 relative overflow-hidden">
+          <div className="bg-[#121118] rounded-3xl p-6 border border-[#2D2545] relative overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
               <div>
-                <span className="text-xs uppercase tracking-wider font-extrabold text-neutral-400">
+                <span className="text-xs uppercase tracking-wider font-extrabold text-[#8B5CF6]">
                   Fondo Disponible en Bóveda / Caja
                 </span>
-                <p className="text-3xl sm:text-4xl font-black text-emerald-400 mt-1">
+                <p className="text-3xl sm:text-4xl font-black text-white mt-1">
                   {formatCOP(currentCash)}
                 </p>
                 <p className="text-xs text-neutral-400 mt-1">
-                  Saldo actualizado en tiempo real tras cada desembolso, cobro o gasto
+                  Saldo actualizado en tiempo real tras cada desembolso, cobro o gasto.
                 </p>
               </div>
 
               <div className="flex items-center gap-2.5">
                 <button
                   onClick={() => setIsCashModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-red-700 hover:bg-red-600 text-white transition-all cursor-pointer shadow-lg shadow-red-950/60"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold bg-gradient-to-r from-[#E5092F] to-[#C40726] hover:from-[#FF1744] hover:to-[#E5092F] text-white transition-all cursor-pointer shadow-lg shadow-red-950/60 active:scale-95"
                 >
                   <PlusCircle className="w-4 h-4" />
                   <span>Nuevo Movimiento de Caja</span>
@@ -119,7 +119,7 @@ export default function CajaPage() {
               </div>
             </div>
 
-            <div className="absolute right-0 top-0 w-64 h-64 bg-red-950/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute right-0 top-0 w-64 h-64 bg-[#8B5CF6]/10 rounded-full blur-3xl pointer-events-none" />
           </div>
 
           {/* Filter Bar */}

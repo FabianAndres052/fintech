@@ -132,63 +132,64 @@ export default function NewLoanModal({ isOpen, onClose, onSuccess, availableCash
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto">
-      <div className="bg-neutral-950 border border-neutral-800 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden my-auto animate-in zoom-in-95 duration-200 text-neutral-100">
-        {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-neutral-800 flex items-center justify-between bg-black/50">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center bg-black/80 backdrop-blur-md overflow-hidden p-0 sm:p-4">
+      <div className="w-full sm:max-w-4xl bg-[#0E0D14] border-t sm:border border-[#2D2545] sm:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col max-h-[94dvh] sm:max-h-[90vh] text-neutral-100 animate-in slide-in-from-bottom duration-200 overflow-hidden">
+        {/* Modal Header Fijo */}
+        <div className="shrink-0 px-5 py-4 border-b border-[#221D33] bg-[#0E0D14]/95 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-700/20 border border-red-700/40 flex items-center justify-center text-red-500 font-bold shadow-md">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#E5092F] to-[#8B5CF6] flex items-center justify-center text-white font-bold shadow-md shadow-purple-950/40">
               <Calculator className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">Nuevo Préstamo</h3>
-              <p className="text-xs text-neutral-400">Interés mensual proporcional al plazo y cronograma de amortización</p>
+              <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">Nuevo Préstamo</h3>
+              <p className="text-[11px] text-neutral-400">Interés mensual proporcional y calendario de cuotas</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {error && (
-            <div className="p-4 rounded-2xl bg-red-950/40 border border-red-800/40 text-red-300 text-xs flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
-              <span>{error}</span>
-            </div>
-          )}
+        {/* Modal Body con Scroll Interno */}
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto overscroll-contain p-5 sm:p-6 space-y-5 touch-scroll">
+            {error && (
+              <div className="p-4 rounded-2xl bg-red-950/40 border border-red-800/40 text-red-300 text-xs flex items-center gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                <span>{error}</span>
+              </div>
+            )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Cliente */}
-            <div className="space-y-1.5 md:col-span-2">
-              <label className="text-xs font-semibold text-neutral-300 flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-red-400" />
-                <span>Cliente Destinatario</span>
-              </label>
-              {clients.length === 0 ? (
-                <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 text-xs text-amber-300">
-                  No hay clientes registrados aún. Por favor registre primero un cliente en el módulo Clientes.
-                </div>
-              ) : (
-                <select
-                  value={selectedClientId}
-                  onChange={(e) => setSelectedClientId(e.target.value)}
-                  className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3.5 py-2.5 text-sm text-neutral-100 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600"
-                  required
-                >
-                  <option value="">Seleccione un cliente...</option>
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.first_name} {c.last_name || ''}{c.document_number ? ` — ${c.document_type || 'CC'}: ${c.document_number}` : ''}{c.phone ? ` (${c.phone})` : ''}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+              {/* Cliente */}
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-xs font-semibold text-neutral-300 flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-[#8B5CF6]" />
+                  <span>Cliente Destinatario</span>
+                </label>
+                {clients.length === 0 ? (
+                  <div className="p-3 rounded-2xl bg-neutral-900 border border-neutral-800 text-xs text-amber-300">
+                    No hay clientes registrados aún. Por favor registre primero un cliente en el módulo Clientes.
+                  </div>
+                ) : (
+                  <select
+                    value={selectedClientId}
+                    onChange={(e) => setSelectedClientId(e.target.value)}
+                    className="w-full bg-[#14121F] border border-[#2D2545] rounded-2xl px-3.5 py-3 text-sm text-neutral-100 focus:outline-none focus:border-[#8B5CF6]"
+                    required
+                  >
+                    <option value="">Seleccione un cliente...</option>
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.first_name} {c.last_name || ''}{c.document_number ? ` — ${c.document_type || 'CC'}: ${c.document_number}` : ''}{c.phone ? ` (${c.phone})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
 
             {/* Capital */}
             <div className="space-y-1.5">
@@ -455,27 +456,28 @@ export default function NewLoanModal({ isOpen, onClose, onSuccess, availableCash
               </div>
             )}
           </div>
+        </div>
 
-          {/* Modal Footer */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-neutral-800">
+          {/* Modal Footer Fijo */}
+          <div className="shrink-0 p-4 border-t border-[#221D33] bg-[#0E0D14]/98 pb-[max(1rem,env(safe-area-inset-bottom))] flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors cursor-pointer"
+              className="px-4 py-3 rounded-2xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading || !calculation.isValid || clients.length === 0}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold bg-red-700 hover:bg-red-600 text-white transition-all cursor-pointer shadow-lg shadow-red-950/50 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-bold text-white bg-gradient-to-r from-[#E5092F] to-[#C40726] hover:from-[#FF1744] hover:to-[#E5092F] shadow-lg shadow-red-950/70 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span>Procesando...</span>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>{isHistorical ? 'Guardar Préstamo Anterior' : 'Confirmar y Desembolsar'}</span>
+                  <span>{isHistorical ? 'Guardar Préstamo Histórico' : 'Confirmar y Desembolsar'}</span>
                 </>
               )}
             </button>

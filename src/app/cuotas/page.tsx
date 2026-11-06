@@ -114,13 +114,13 @@ function CuotasContent() {
   };
 
   return (
-    <div className="flex min-h-screen bg-black text-neutral-100">
+    <div className="flex min-h-screen bg-[#0B0B0F] text-neutral-100">
       <Sidebar />
 
-      <div className="flex-1 flex flex-col min-w-0 pb-20 lg:pb-8">
+      <div className="flex-1 flex flex-col min-w-0 pb-24 lg:pb-8">
         <Header
-          title="Cronograma de Cuotas & Cobranza"
-          subtitle="Vencimientos diarios, semanales, quincenales y gestión de cobros en mora"
+          title="Cuotas & Cobranza"
+          subtitle="Vencimientos programados, gestión diaria y cobranza de cuotas"
           availableCash={availableCash}
           onNewLoan={() => setIsNewLoanOpen(true)}
           onNewPayment={() => {
@@ -129,46 +129,46 @@ function CuotasContent() {
           }}
         />
 
-        <main className="flex-1 p-4 sm:p-8 space-y-6 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 sm:p-7 space-y-6 max-w-7xl mx-auto w-full">
           {/* Filters */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setFilter('todas')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3.5 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
                   filter === 'todas'
-                    ? 'bg-red-700 text-white font-bold shadow-md shadow-red-950/50'
-                    : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
+                    ? 'bg-gradient-to-r from-[#E5092F] to-[#C40726] text-white font-bold shadow-md shadow-red-950/50'
+                    : 'bg-[#14121F] text-neutral-400 hover:text-white border border-[#2D2545]'
                 }`}
               >
                 Todas las Cuotas
               </button>
               <button
                 onClick={() => setFilter('mora')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3.5 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
                   filter === 'mora'
                     ? 'bg-red-950/60 border border-red-700 text-red-300 font-bold'
-                    : 'bg-neutral-900 text-red-400 hover:text-red-300 border border-red-900/30'
+                    : 'bg-[#14121F] text-[#E5092F] hover:text-red-300 border border-red-900/30'
                 }`}
               >
                 En Mora (Vencidas)
               </button>
               <button
                 onClick={() => setFilter('hoy')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3.5 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
                   filter === 'hoy'
-                    ? 'bg-neutral-800 text-white font-bold border border-neutral-700'
-                    : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
+                    ? 'bg-[#1C1A29] text-white font-bold border border-[#8B5CF6]/50 shadow-md'
+                    : 'bg-[#14121F] text-neutral-400 hover:text-white border border-[#2D2545]'
                 }`}
               >
                 Vencen Hoy
               </button>
               <button
                 onClick={() => setFilter('semana')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3.5 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
                   filter === 'semana'
-                    ? 'bg-neutral-800 text-white font-bold border border-neutral-700'
-                    : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
+                    ? 'bg-[#1C1A29] text-white font-bold border border-[#8B5CF6]/50 shadow-md'
+                    : 'bg-[#14121F] text-neutral-400 hover:text-white border border-[#2D2545]'
                 }`}
               >
                 Próximos 7 Días
@@ -177,19 +177,19 @@ function CuotasContent() {
 
             <div className="flex items-center gap-2.5">
               <div className="relative flex-1 sm:w-60">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Buscar préstamo o cliente..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#14121F] border border-[#2D2545] rounded-2xl pl-10 pr-3 py-2.5 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-[#8B5CF6]"
                 />
               </div>
 
               <button
                 onClick={handleExportExcel}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-semibold bg-[#14121F] hover:bg-[#1A1828] text-neutral-300 border border-[#2D2545] transition-colors cursor-pointer"
               >
                 <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
                 <span>Excel</span>
@@ -198,10 +198,10 @@ function CuotasContent() {
           </div>
 
           {/* Installments Table */}
-          <div className="glass-panel rounded-3xl border border-slate-800 overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="bg-[#121118] rounded-3xl border border-[#2D2545] overflow-hidden">
+            <div className="overflow-x-auto touch-scroll">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-950/70 text-slate-400 border-b border-slate-800 uppercase tracking-wider text-[11px]">
+                <thead className="bg-[#181622] text-neutral-400 border-b border-[#2D2545] uppercase tracking-wider text-[11px]">
                   <tr>
                     <th className="py-3 px-4">Préstamo</th>
                     <th className="py-3 px-4">Cuota</th>
@@ -213,7 +213,7 @@ function CuotasContent() {
                     <th className="py-3 px-4 text-right">Acción</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 bg-slate-900/30">
+                <tbody className="divide-y divide-[#221D33]/60 bg-[#121118]">
                   {installments.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="text-center py-10 text-slate-500">

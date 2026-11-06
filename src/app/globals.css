@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #070709;
-  --foreground: #f4f4f5;
+  --background: #0B0B0F;
+  --foreground: #F4F4F6;
+  --fintech-black: #0B0B0F;
+  --fintech-card: #121118;
+  --fintech-card-hover: #181622;
+  --fintech-border: #221D33;
+  --fintech-red: #E5092F;
+  --fintech-red-hover: #C40726;
+  --fintech-lilac: #8B5CF6;
+  --fintech-lilac-light: #A78BFA;
+  --fintech-lilac-dark: #6D28D9;
 }
 
 @theme inline {
@@ -10,45 +19,100 @@
   --color-foreground: var(--foreground);
 }
 
-body {
-  background-color: #070709;
-  color: #f4f4f5;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  background-color: #0B0B0F;
+  color: #F4F4F6;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Soporte para Safe Area en iPhone / iOS */
+.safe-bottom {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+.safe-top {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
 }
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0a0a0d;
+  background: #0B0B0F;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: #252033;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #b91c1c;
+  background: #8B5CF6;
 }
 
-/* Glassmorphism Classes */
-.glass-panel {
-  background: rgba(14, 14, 18, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.glass-card {
-  background: rgba(20, 20, 26, 0.7);
+/* Estilos de Tarjetas y Paneles Premium */
+.fintech-card {
+  background: linear-gradient(145deg, rgba(20, 18, 28, 0.95) 0%, rgba(13, 12, 18, 0.98) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.fintech-card-red {
+  background: linear-gradient(145deg, rgba(35, 12, 18, 0.8) 0%, rgba(18, 11, 15, 0.95) 100%);
+  border: 1px solid rgba(229, 9, 47, 0.25);
+  box-shadow: 0 8px 32px 0 rgba(229, 9, 47, 0.08);
+}
+
+.fintech-card-lilac {
+  background: linear-gradient(145deg, rgba(28, 18, 45, 0.8) 0%, rgba(14, 11, 24, 0.95) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(139, 92, 246, 0.1);
+}
+
+.glow-red {
+  box-shadow: 0 4px 20px -2px rgba(229, 9, 47, 0.45);
+}
+
+.glow-lilac {
+  box-shadow: 0 4px 20px -2px rgba(139, 92, 246, 0.35);
+}
+
+.gradient-brand {
+  background: linear-gradient(135deg, #E5092F 0%, #8B5CF6 100%);
+}
+
+.gradient-btn-red {
+  background: linear-gradient(135deg, #E5092F 0%, #B90724 100%);
+}
+
+.gradient-btn-red:hover {
+  background: linear-gradient(135deg, #FF1744 0%, #E5092F 100%);
+}
+
+.gradient-btn-lilac {
+  background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+}
+
+.gradient-btn-lilac:hover {
+  background: linear-gradient(135deg, #A78BFA 0%, #8B5CF6 100%);
+}
+
+/* Modales y scroll móvil suave */
+.touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 /* Print styles for receipt generation */

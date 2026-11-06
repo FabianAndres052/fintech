@@ -111,16 +111,16 @@ export default function ConfiguracionPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-black text-neutral-100">
+    <div className="flex min-h-screen bg-[#0B0B0F] text-neutral-100">
       <Sidebar />
 
-      <div className="flex-1 flex flex-col min-w-0 pb-20 lg:pb-8">
+      <div className="flex-1 flex flex-col min-w-0 pb-24 lg:pb-8">
         <Header
-          title="Configuración del Sistema"
+          title="Perfil & Configuración"
           subtitle="Tasas de interés, reglas de negocio, parámetros de crédito y seguridad de acceso"
         />
 
-        <main className="flex-1 p-4 sm:p-8 space-y-6 max-w-4xl mx-auto w-full">
+        <main className="flex-1 p-4 sm:p-7 space-y-6 max-w-4xl mx-auto w-full">
           {message && (
             <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
@@ -137,9 +137,9 @@ export default function ConfiguracionPage() {
 
           <form onSubmit={handleSaveSettings} className="space-y-6">
             {/* 1. Datos Institucionales */}
-            <div className="bg-neutral-950 rounded-3xl p-6 border border-neutral-800 space-y-4">
-              <div className="flex items-center gap-2.5 pb-3 border-b border-neutral-800">
-                <Building className="w-4 h-4 text-red-400" />
+            <div className="bg-[#121118] rounded-3xl p-6 border border-[#2D2545] space-y-4">
+              <div className="flex items-center gap-2.5 pb-3 border-b border-[#221D33]">
+                <Building className="w-4 h-4 text-[#8B5CF6]" />
                 <h3 className="text-sm font-bold text-white uppercase tracking-wider">
                   Datos de la Entidad FINTECH
                 </h3>

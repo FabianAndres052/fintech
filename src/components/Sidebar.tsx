@@ -18,6 +18,7 @@ import {
   ChevronRight,
   TrendingUp,
 } from 'lucide-react';
+import FintechLogo from './FintechLogo';
 
 interface SidebarProps {
   adminName?: string;
@@ -71,7 +72,6 @@ export default function Sidebar({ adminName = 'Ana Posada', adminEmail = 'AnaPos
       } catch (err) {
         console.error('Storage clear error:', err);
       }
-      // Reemplaza el historial para impedir volver con botón Atrás del navegador
       window.location.replace('/login?logout=1');
     } else {
       router.push('/login?logout=1');
@@ -84,82 +84,82 @@ export default function Sidebar({ adminName = 'Ana Posada', adminEmail = 'AnaPos
     { name: 'Préstamos', href: '/prestamos', icon: CreditCard },
     { name: 'Cuotas & Cobros', href: '/cuotas', icon: CalendarDays },
     { name: 'Pagos & Recaudos', href: '/pagos', icon: Receipt },
-    { name: 'Contabilidad', href: '/contabilidad', icon: Landmark },
-    { name: 'Caja & Movimientos', href: '/caja', icon: Wallet },
+    { name: 'Finanzas', href: '/contabilidad', icon: Landmark },
+    { name: 'Caja & Efectivo', href: '/caja', icon: Wallet },
     { name: 'Reportes', href: '/reportes', icon: FileBarChart },
     { name: 'Auditoría', href: '/auditoria', icon: ShieldCheck },
     { name: 'Configuración', href: '/configuracion', icon: Settings },
   ];
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 bg-black border-r border-neutral-800 shrink-0 h-screen sticky top-0 z-30 select-none">
+    <aside className="hidden lg:flex flex-col w-64 bg-[#0B0B0F] border-r border-[#221D33] shrink-0 h-screen sticky top-0 z-30 select-none">
       {/* Brand Header */}
-      <div className="p-5 border-b border-neutral-800 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-red-800 via-red-700 to-red-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-red-950/60 border border-red-500/30">
-          $
-        </div>
-        <div>
-          <span className="text-lg font-black tracking-wider text-white flex items-center">
-            FIN<span className="text-red-500">TECH</span>
-          </span>
-          <span className="text-[10px] tracking-widest uppercase font-semibold text-neutral-400">
-            Créditos & Cartera
-          </span>
-        </div>
+      <div className="p-5 border-b border-[#221D33] flex items-center justify-between">
+        <FintechLogo size="sm" showSubtitle />
       </div>
 
-      {/* Navigation links */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      {/* Navigation Links */}
+      <nav className="flex-1 overflow-y-auto px-3.5 py-4 space-y-1.5 touch-scroll">
+        <p className="text-[10px] uppercase font-bold text-[#8B5CF6] tracking-wider px-3 mb-2">
+          Administración
+        </p>
+
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href;
+          const isActive =
+            item.href === '/'
+              ? pathname === '/'
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all group ${
+              className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-medium transition-all group ${
                 isActive
-                  ? 'bg-red-950/40 text-red-400 border border-red-800/40 font-semibold shadow-sm'
-                  : 'text-neutral-400 hover:text-white hover:bg-neutral-900/80'
+                  ? 'bg-gradient-to-r from-[#E5092F]/20 via-[#8B5CF6]/15 to-transparent text-white border-l-4 border-[#E5092F]'
+                  : 'text-neutral-400 hover:text-white hover:bg-[#181622]'
               }`}
             >
               <div className="flex items-center gap-3">
                 <Icon
                   className={`w-4 h-4 transition-colors ${
-                    isActive ? 'text-red-400' : 'text-neutral-400 group-hover:text-neutral-200'
+                    isActive
+                      ? 'text-[#E5092F]'
+                      : 'text-neutral-400 group-hover:text-[#8B5CF6]'
                   }`}
                 />
-                <span>{item.name}</span>
+                <span className={isActive ? 'font-bold text-white' : ''}>{item.name}</span>
               </div>
-              {isActive && <ChevronRight className="w-3.5 h-3.5 text-red-400" />}
+              {isActive && (
+                <div className="w-1.5 h-1.5 rounded-full bg-[#E5092F] shadow-[0_0_8px_#E5092F]" />
+              )}
             </Link>
           );
         })}
       </nav>
 
-      {/* Admin Profile & Logout Footer */}
-      <div className="p-4 border-t border-neutral-800 bg-[#0a0a0d]">
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-red-900/30 border border-red-700/40 flex items-center justify-center text-red-400 font-bold text-xs shrink-0">
-              {user.name.charAt(0).toUpperCase()}
+      {/* Admin User Footer Profile */}
+      <div className="p-3.5 border-t border-[#221D33] bg-[#0E0D14]">
+        <div className="flex items-center justify-between p-2 rounded-2xl bg-[#14121F] border border-[#2A243D]">
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#E5092F] to-[#8B5CF6] flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-md">
+              AP
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-neutral-200 truncate">{user.name}</p>
-              <p className="text-[11px] text-neutral-400 truncate">{user.email}</p>
+            <div className="truncate">
+              <p className="text-xs font-bold text-white truncate">{user.name}</p>
+              <p className="text-[10px] text-neutral-400 truncate">Administradora</p>
             </div>
           </div>
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            title="Cerrar sesión"
+            className="p-1.5 rounded-xl text-neutral-400 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
-
-        <button
-          onClick={handleLogout}
-          disabled={loggingOut}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-red-400 hover:text-white hover:bg-red-950/50 border border-red-900/40 transition-all cursor-pointer disabled:opacity-50"
-        >
-          <LogOut className="w-3.5 h-3.5" />
-          <span>{loggingOut ? 'Cerrando sesión...' : 'Cerrar Sesión'}</span>
-        </button>
       </div>
     </aside>
   );
