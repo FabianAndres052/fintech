@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-function isTokenValid(token: string | undefined): boolean {
-  if (!token) return false;
+function getTokenPayload(token: string | undefined): any | null {
+  if (!token) return null;
   try {
     const parts = token.split('.');
-    if (parts.length !== 3) return false;
+    if (parts.length !== 3) return null;
     const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-    if (!payload || !payload.id || !payload.exp) return false;
-    if (payload.exp * 1000 < Date.now()) return false;
-    return true;
+    if (!payload || !payload.id || !payload.exp) return null;
+    if (payload.exp * 1000 < Date.now()) return null;
+    return payload;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -20,7 +20,8 @@ export function proxy(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
   const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : undefined;
   const token = request.cookies.get('admin_token')?.value || bearerToken;
-  const hasValidToken = isTokenValid(token);
+  const payload = getTokenPayload(token);
+  const hasValidToken = !!payload;
 
   const isLoginPage = pathname === '/login';
   const isPublicApi =
@@ -57,11 +58,30 @@ export function proxy(request: NextRequest) {
       return resp;
     }
     const loginUrl = new URL('/login', request.url);
-    // Usar rewrite en vez de redirect para devolver HTTP 200 en vez de 307.
-    // Esto evita que WebKit/Safari en iOS rompa el modo standalone de la PWA al iniciar o recargar.
     const resp = NextResponse.rewrite(loginUrl);
     resp.cookies.delete('admin_token');
     return resp;
+  }
+
+  // =========================================================================
+  // BLINDAJE DE SEGURIDAD EXCLUSIVO: SUPER ADMINISTRADOR Y AUDITORÍA
+  // Solo accesible si payload.role === 'SUPERADMIN'
+  // =========================================================================
+  const isSuperadminRoute =
+    pathname.startsWith('/superadmin') ||
+    pathname.startsWith('/auditoria') ||
+    pathname.startsWith('/api/superadmin') ||
+    pathname.startsWith('/api/audit');
+
+  if (isSuperadminRoute && payload?.role !== 'SUPERADMIN') {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { error: 'Acceso restringido: Se requieren privilegios exclusivos de Super Administrador.' },
+        { status: 403 }
+      );
+    }
+    // Si intenta ingresar por URL en el navegador, redirigir al Dashboard principal
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   // Encabezados anti-caché en todas las rutas protegidas para evitar retroceso con botón Atrás del navegador

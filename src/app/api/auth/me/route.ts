@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       admin: {
         id: admin.id,
         name: admin.name,
-        username: (admin as any).username || 'AnaPosada55',
+        username: admin.username || (admin.role === 'SUPERADMIN' ? 'Fabian1105' : 'AnaPosada55'),
         email: admin.email,
         role: admin.role,
       },

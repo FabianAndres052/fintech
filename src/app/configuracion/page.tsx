@@ -39,6 +39,7 @@ export default function ConfiguracionPage() {
   } | null>(null);
 
   const [settings, setSettings] = useState<any>({});
+  const [cashBalance, setCashBalance] = useState(0);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +80,12 @@ export default function ConfiguracionPage() {
       const settingsData = await settingsRes.json();
       if (settingsData.success) {
         setSettings(settingsData.settings || {});
+      }
+
+      const cashRes = await fetch('/api/cash');
+      const cashData = await cashRes.json();
+      if (cashData.success && typeof cashData.currentCash === 'number') {
+        setCashBalance(cashData.currentCash);
       }
     } catch (err) {
       console.error(err);
@@ -263,6 +270,7 @@ export default function ConfiguracionPage() {
         <Header
           title="Perfil & Configuración"
           subtitle="Seguridad de acceso 2FA, parámetros crediticios e información institucional"
+          availableCash={cashBalance}
         />
 
         <main className="flex-1 p-4 sm:p-7 space-y-6 max-w-4xl mx-auto w-full">
@@ -329,7 +337,7 @@ export default function ConfiguracionPage() {
                   <input
                     type="text"
                     disabled
-                    value={admin?.email || 'anaposada55@fintech.com'}
+                    value={admin?.email || 'artulio213@gmail.com'}
                     className="w-full bg-[#181622]/60 border border-[#221D33] rounded-xl px-3.5 py-2.5 text-xs text-neutral-400 cursor-not-allowed"
                   />
                   <p className="text-[10px] text-neutral-500">
@@ -387,7 +395,7 @@ export default function ConfiguracionPage() {
                       type="email"
                       value={twoFaEmail}
                       onChange={(e) => setTwoFaEmail(e.target.value)}
-                      placeholder="ej. anaposada55@fintech.com"
+                      placeholder="ej. artulio213@gmail.com"
                       required
                       className="w-full bg-[#14121F] border border-[#2D2545] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#8B5CF6]"
                     />

@@ -20,8 +20,8 @@ export default function AuditoriaPage() {
     try {
       const authRes = await fetch('/api/auth/me');
       const authData = await authRes.json();
-      if (!authRes.ok || !authData.authenticated) {
-        router.push('/login');
+      if (!authRes.ok || !authData.authenticated || authData.admin?.role !== 'SUPERADMIN') {
+        router.push('/');
         return;
       }
 

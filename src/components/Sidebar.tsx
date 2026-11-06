@@ -14,6 +14,7 @@ import {
   FileBarChart,
   Settings,
   ShieldCheck,
+  ShieldAlert,
   LogOut,
   ChevronRight,
   TrendingUp,
@@ -26,20 +27,24 @@ interface SidebarProps {
   onLogout?: () => void;
 }
 
-export default function Sidebar({ adminName = 'Ana Posada', adminEmail = 'AnaPosada55', onLogout }: SidebarProps) {
+export default function Sidebar({ adminName = 'Ana Posada', adminEmail = 'artulio213@gmail.com', onLogout }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<{ name: string; email: string }>(() => {
+  const [user, setUser] = useState<{ name: string; email: string; role?: string }>(() => {
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('admin_user');
         if (cached) {
           const parsed = JSON.parse(cached);
-          return { name: parsed.name || adminName, email: parsed.username || parsed.email || adminEmail };
+          return {
+            name: parsed.name || adminName,
+            email: parsed.email || parsed.username || adminEmail,
+            role: parsed.role || 'ADMIN',
+          };
         }
       } catch {}
     }
-    return { name: adminName, email: adminEmail };
+    return { name: adminName, email: adminEmail, role: 'ADMIN' };
   });
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -48,7 +53,11 @@ export default function Sidebar({ adminName = 'Ana Posada', adminEmail = 'AnaPos
       .then((res) => res.json())
       .then((data) => {
         if (data.authenticated && data.admin) {
-          setUser({ name: data.admin.name, email: data.admin.email });
+          setUser({
+            name: data.admin.name,
+            email: data.admin.email,
+            role: data.admin.role,
+          });
         }
       })
       .catch(() => {});
@@ -78,6 +87,8 @@ export default function Sidebar({ adminName = 'Ana Posada', adminEmail = 'AnaPos
     }
   };
 
+  const isSuperAdmin = user.role === 'SUPERADMIN';
+
   const menuItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Clientes', href: '/clientes', icon: Users },
@@ -87,7 +98,13 @@ export default function Sidebar({ adminName = 'Ana Posada', adminEmail = 'AnaPos
     { name: 'Finanzas', href: '/contabilidad', icon: Landmark },
     { name: 'Caja & Efectivo', href: '/caja', icon: Wallet },
     { name: 'Reportes', href: '/reportes', icon: FileBarChart },
-    { name: 'Auditoría', href: '/auditoria', icon: ShieldCheck },
+    // Exclusivo para Super Administrador
+    ...(isSuperAdmin
+      ? [
+          { name: 'Super Administrador', href: '/superadmin', icon: ShieldAlert, isSpecial: true },
+          { name: 'Auditoría', href: '/auditoria', icon: ShieldCheck },
+        ]
+      : []),
     { name: 'Configuración', href: '/configuracion', icon: Settings },
   ];
 
@@ -104,7 +121,7 @@ export default function Sidebar({ adminName = 'Ana Posada', adminEmail = 'AnaPos
           Administración
         </p>
 
-        {menuItems.map((item) => {
+        {menuItems.map((item: any) => {
           const Icon = item.icon;
           const isActive =
             item.href === '/'
@@ -116,7 +133,11 @@ export default function Sidebar({ adminName = 'Ana Posada', adminEmail = 'AnaPos
               key={item.href}
               href={item.href}
               className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-medium transition-all group ${
-                isActive
+                item.isSpecial
+                  ? isActive
+                    ? 'bg-gradient-to-r from-purple-600/30 via-red-600/20 to-transparent text-white border-l-4 border-purple-500 shadow-md shadow-purple-950/40'
+                    : 'text-purple-300 bg-purple-950/20 border border-purple-500/30 hover:bg-purple-900/30 hover:text-white'
+                  : isActive
                   ? 'bg-gradient-to-r from-[#E5092F]/20 via-[#8B5CF6]/15 to-transparent text-white border-l-4 border-[#E5092F]'
                   : 'text-neutral-400 hover:text-white hover:bg-[#181622]'
               }`}
@@ -124,15 +145,19 @@ export default function Sidebar({ adminName = 'Ana Posada', adminEmail = 'AnaPos
               <div className="flex items-center gap-3">
                 <Icon
                   className={`w-4 h-4 transition-colors ${
-                    isActive
+                    item.isSpecial
+                      ? 'text-purple-400 group-hover:text-purple-300'
+                      : isActive
                       ? 'text-[#E5092F]'
                       : 'text-neutral-400 group-hover:text-[#8B5CF6]'
                   }`}
                 />
-                <span className={isActive ? 'font-bold text-white' : ''}>{item.name}</span>
+                <span className={isActive || item.isSpecial ? 'font-bold text-white' : ''}>
+                  {item.name}
+                </span>
               </div>
               {isActive && (
-                <div className="w-1.5 h-1.5 rounded-full bg-[#E5092F] shadow-[0_0_8px_#E5092F]" />
+                <div className={`w-1.5 h-1.5 rounded-full ${item.isSpecial ? 'bg-purple-400 shadow-[0_0_8px_#A855F7]' : 'bg-[#E5092F] shadow-[0_0_8px_#E5092F]'}`} />
               )}
             </Link>
           );
@@ -143,19 +168,23 @@ export default function Sidebar({ adminName = 'Ana Posada', adminEmail = 'AnaPos
       <div className="p-3.5 border-t border-[#221D33] bg-[#0E0D14]">
         <div className="flex items-center justify-between p-2 rounded-2xl bg-[#14121F] border border-[#2A243D]">
           <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#E5092F] to-[#8B5CF6] flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-md">
-              AP
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-md ${
+              isSuperAdmin ? 'bg-gradient-to-tr from-amber-500 via-red-600 to-purple-600' : 'bg-gradient-to-tr from-[#E5092F] to-[#8B5CF6]'
+            }`}>
+              {isSuperAdmin ? 'FM' : 'AP'}
             </div>
             <div className="truncate">
               <p className="text-xs font-bold text-white truncate">{user.name}</p>
-              <p className="text-[10px] text-neutral-400 truncate">Administradora</p>
+              <p className="text-[10px] text-neutral-400 truncate">
+                {isSuperAdmin ? 'Super Administrador' : 'Administradora'}
+              </p>
             </div>
           </div>
           <button
             onClick={handleLogout}
             disabled={loggingOut}
             title="Cerrar sesión"
-            className="p-1.5 rounded-xl text-neutral-400 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+            className="p-1.5 rounded-xl text-neutral-400 hover:text-red-400 hover:bg-red-950/30 transition-colors cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
           </button>

@@ -11,6 +11,7 @@ export interface AdminPayload {
   email: string;
   role: string;
   name: string;
+  username?: string;
 }
 
 export function hashPassword(plainText: string): Promise<string> {
@@ -21,13 +22,14 @@ export function comparePassword(plainText: string, hashed: string): Promise<bool
   return bcrypt.compare(plainText, hashed);
 }
 
-export function signAdminToken(admin: { id: number; email: string; role: string; name: string }): string {
+export function signAdminToken(admin: { id: number; email: string; role: string; name: string; username?: string }): string {
   return jwt.sign(
     {
       id: admin.id,
       email: admin.email,
       role: admin.role,
       name: admin.name,
+      username: admin.username,
     },
     JWT_SECRET,
     { expiresIn: '7d' }

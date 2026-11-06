@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -15,6 +15,7 @@ import {
   Wallet,
   FileBarChart,
   ShieldCheck,
+  ShieldAlert,
   LogOut,
   ChevronRight,
   Receipt,
@@ -31,6 +32,29 @@ export default function MobileNav({ onLogout }: MobileNavProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [userRole, setUserRole] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('admin_user');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          return parsed.role || 'ADMIN';
+        }
+      } catch {}
+    }
+    return 'ADMIN';
+  });
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.admin) {
+          setUserRole(data.admin.role || 'ADMIN');
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleLogout = async () => {
     if (loggingOut) return;
@@ -57,6 +81,8 @@ export default function MobileNav({ onLogout }: MobileNavProps) {
     }
   };
 
+  const isSuperAdmin = userRole === 'SUPERADMIN';
+
   const navItems = [
     { name: 'Inicio', href: '/', icon: Home },
     { name: 'Clientes', href: '/clientes', icon: Users },
@@ -66,11 +92,16 @@ export default function MobileNav({ onLogout }: MobileNavProps) {
   ];
 
   const secondaryItems = [
+    ...(isSuperAdmin
+      ? [
+          { name: 'Super Administrador', href: '/superadmin', icon: ShieldAlert, badge: 'Maestro', isSpecial: true },
+          { name: 'Auditoría del Sistema', href: '/auditoria', icon: ShieldCheck, badge: 'Seguridad' },
+        ]
+      : []),
     { name: 'Cuotas & Cobros', href: '/cuotas', icon: CalendarDays, badge: 'Día a día' },
     { name: 'Caja & Movimientos', href: '/caja', icon: Wallet, badge: 'Efectivo' },
     { name: 'Historial de Pagos', href: '/pagos', icon: Receipt, badge: 'Recaudos' },
     { name: 'Reportes Financieros', href: '/reportes', icon: FileBarChart, badge: 'PDF / Excel' },
-    { name: 'Auditoría del Sistema', href: '/auditoria', icon: ShieldCheck, badge: 'Seguridad' },
   ];
 
   return (

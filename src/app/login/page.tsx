@@ -414,7 +414,7 @@ export default function LoginPage() {
                     type="email"
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
-                    placeholder="ej. anaposada55@fintech.com"
+                    placeholder="ej. artulio213@gmail.com"
                     required
                     className="w-full bg-[#14121F] border border-[#2D2545] rounded-2xl px-4 py-3 text-xs sm:text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-[#8B5CF6]"
                   />

@@ -18,13 +18,30 @@ interface HeaderProps {
 export default function Header({
   title,
   subtitle,
-  availableCash = 0,
+  availableCash,
   onNewLoan,
   onNewPayment,
   onCashMovement,
 }: HeaderProps) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [cash, setCash] = useState<number>(availableCash || 0);
+
+  useEffect(() => {
+    // Si availableCash fue suministrado y es positivo, usarlo; de lo contrario consultar el origen de datos real
+    if (typeof availableCash === 'number' && availableCash > 0) {
+      setCash(availableCash);
+    } else {
+      fetch('/api/cash')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && typeof data.currentCash === 'number') {
+            setCash(data.currentCash);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [availableCash]);
 
   useEffect(() => {
     // Consultar cantidad de notificaciones iniciales
@@ -88,7 +105,7 @@ export default function Header({
               <div>
                 <p className="text-[9px] sm:text-[10px] text-neutral-400 uppercase tracking-wider font-semibold">Caja Disponible</p>
                 <p className="text-xs sm:text-sm font-bold text-white group-hover:text-[#A78BFA]">
-                  {formatCOP(availableCash)}
+                  {formatCOP(cash)}
                 </p>
               </div>
             </div>

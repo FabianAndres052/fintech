@@ -66,11 +66,13 @@ export async function POST(req: NextRequest) {
       email: admin.email,
       role: admin.role,
       name: admin.name,
+      username: admin.username,
     });
 
     const safeAdmin: Partial<Administrator> = {
       id: admin.id,
       name: admin.name,
+      username: admin.username,
       email: admin.email,
       role: admin.role,
     };

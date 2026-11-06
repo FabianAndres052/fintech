@@ -9,6 +9,13 @@ export async function GET(req: NextRequest) {
     const admin = await getAdminFromRequest(req);
     if (!admin) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
+    if (admin.role !== 'SUPERADMIN') {
+      return NextResponse.json(
+        { error: 'Acceso restringido: Se requieren privilegios exclusivos de Super Administrador.' },
+        { status: 403 }
+      );
+    }
+
     const logs = await query<any[]>(`
       SELECT a.*, adm.name as admin_name, adm.email as admin_email
       FROM audit_logs a
