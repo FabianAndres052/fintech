@@ -54,7 +54,9 @@ export function proxy(request: NextRequest) {
       return resp;
     }
     const loginUrl = new URL('/login', request.url);
-    const resp = NextResponse.redirect(loginUrl);
+    // Usar rewrite en vez de redirect para devolver HTTP 200 en vez de 307.
+    // Esto evita que WebKit/Safari en iOS rompa el modo standalone de la PWA al iniciar o recargar.
+    const resp = NextResponse.rewrite(loginUrl);
     resp.cookies.delete('admin_token');
     return resp;
   }

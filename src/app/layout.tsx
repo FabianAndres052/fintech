@@ -20,9 +20,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover',
 };
 
 export const metadata: Metadata = {
+  applicationName: 'FINTECH',
   title: 'FINTECH',
   description: 'Plataforma profesional de préstamos y finanzas.',
   manifest: '/manifest.json',
@@ -31,9 +33,22 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'FINTECH',
   },
+  formatDetection: {
+    telephone: false,
+  },
   icons: {
-    icon: '/icons/icon.svg',
-    apple: '/apple-touch-icon.png',
+    icon: [
+      { url: '/icons/icon.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon-180x180.png', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon-167x167.png', sizes: '167x167', type: 'image/png' },
+      { url: '/apple-touch-icon-152x152.png', sizes: '152x152', type: 'image/png' },
+      { url: '/apple-touch-icon-120x120.png', sizes: '120x120', type: 'image/png' },
+    ],
   },
 };
 
@@ -45,9 +60,11 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}>
       <head>
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
+        <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
+        <link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120x120.png" />
       </head>
       <body className="min-h-full bg-black text-neutral-100 flex flex-col selection:bg-red-600 selection:text-white">
         <AuthCacheSync />

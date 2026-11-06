@@ -1,9 +1,11 @@
-const CACHE_NAME = 'financiera-cache-v1';
+const CACHE_NAME = 'financiera-cache-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
+  '/apple-touch-icon.png',
+  '/apple-touch-icon-180x180.png',
   '/favicon.ico',
 ];
 

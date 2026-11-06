@@ -73,7 +73,13 @@ export default function LoginPage() {
       }
 
       // Reemplazo limpio hacia el dashboard
-      window.location.replace('/');
+      if (typeof window !== 'undefined') {
+        if (window.location.pathname === '/') {
+          window.location.reload();
+        } else {
+          window.location.replace('/');
+        }
+      }
     } catch (err: any) {
       if (err.name === 'AbortError' || err.message?.toLowerCase().includes('fetch')) {
         setError('El servidor está inicializando la conexión en la nube. Por favor intenta ingresar de nuevo.');
