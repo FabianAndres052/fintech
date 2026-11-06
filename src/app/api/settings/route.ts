@@ -35,7 +35,23 @@ export async function PUT(req: NextRequest) {
     if (!admin) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
     const body = await req.json();
-    const { settings, adminPasswordUpdate } = body;
+    const { settings, adminPasswordUpdate, adminProfileUpdate } = body;
+
+    // Actualizar nombre de usuario del administrador
+    if (adminProfileUpdate && adminProfileUpdate.username) {
+      const cleanUsername = adminProfileUpdate.username.trim();
+      const existing = await query<any[]>(
+        'SELECT id FROM administrators WHERE LOWER(username) = LOWER(?) AND id != ? LIMIT 1',
+        [cleanUsername, admin.id]
+      );
+      if (existing && existing.length > 0) {
+        return NextResponse.json(
+          { error: 'Ese nombre de usuario ya se encuentra registrado por otra cuenta.' },
+          { status: 400 }
+        );
+      }
+      await query('UPDATE administrators SET username = ?, updated_at = NOW() WHERE id = ?', [cleanUsername, admin.id]);
+    }
 
     // Actualizar o insertar configuraciones del sistema
     if (settings && typeof settings === 'object') {
