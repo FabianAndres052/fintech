@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import MobileNav from '@/components/MobileNav';
 import Header from '@/components/Header';
@@ -17,6 +18,7 @@ import {
   TrendingUp,
   Banknote,
   PlusCircle,
+  FileCheck,
 } from 'lucide-react';
 import { Payment } from '@/lib/types';
 import { formatCOP, formatDate } from '@/lib/calculations';
@@ -80,11 +82,24 @@ export default function PagosPage() {
   const totalCapital = filteredPayments.reduce((acc, p) => acc + Number(p.capital_paid), 0);
   const totalInterest = filteredPayments.reduce((acc, p) => acc + Number(p.interest_paid), 0);
 
-  const handleOpenReceipt = (p: Payment) => {
+  const handleOpenReceipt = async (p: Payment) => {
+    try {
+      const res = await fetch(`/api/receipts?code=${encodeURIComponent(p.payment_code)}`);
+      const data = await res.json();
+      if (data.success && data.receipts?.length > 0) {
+        setSelectedReceipt(data.receipts[0]);
+        setIsReceiptOpen(true);
+        return;
+      }
+    } catch (e) {
+      console.warn('Fallback local receipt', e);
+    }
+
     setSelectedReceipt({
       paymentCode: p.payment_code,
       clientName: p.client_name || 'Cliente',
       clientDocument: p.client_document || 'N/A',
+      clientPhone: (p as any).client_phone || '+57 300 123 4561',
       loanCode: p.loan_code || 'PRE',
       amountPaid: p.amount_paid,
       capitalPaid: p.capital_paid,
@@ -175,6 +190,14 @@ export default function PagosPage() {
             </div>
 
             <div className="flex items-center gap-2.5">
+              <Link
+                href="/recibos"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-semibold bg-[#1A1828] hover:bg-[#252238] text-[#A78BFA] border border-[#3B3258] transition-colors cursor-pointer"
+              >
+                <FileCheck className="w-3.5 h-3.5" />
+                <span>Tickets & Recibos PNG</span>
+              </Link>
+
               <button
                 onClick={handleExportExcel}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-semibold bg-[#14121F] hover:bg-[#1A1828] text-neutral-300 border border-[#2D2545] transition-colors cursor-pointer"

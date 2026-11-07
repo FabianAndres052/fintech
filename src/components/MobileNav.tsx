@@ -19,6 +19,7 @@ import {
   LogOut,
   ChevronRight,
   Receipt,
+  FileCheck,
   Sparkles,
 } from 'lucide-react';
 import FintechLogo from './FintechLogo';
@@ -100,6 +101,7 @@ export default function MobileNav({ onLogout }: MobileNavProps) {
       : []),
     { name: 'Cuotas & Cobros', href: '/cuotas', icon: CalendarDays, badge: 'Día a día' },
     { name: 'Caja & Movimientos', href: '/caja', icon: Wallet, badge: 'Efectivo' },
+    { name: 'Recibos & Comprobantes', href: '/recibos', icon: FileCheck, badge: 'PNG & WA' },
     { name: 'Historial de Pagos', href: '/pagos', icon: Receipt, badge: 'Recaudos' },
     { name: 'Reportes Financieros', href: '/reportes', icon: FileBarChart, badge: 'PDF / Excel' },
   ];

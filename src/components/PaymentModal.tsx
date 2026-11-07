@@ -143,9 +143,12 @@ export default function PaymentModal({
       }
 
       setReceiptData({
+        id: data.payment.receiptId,
+        receipt_code: data.payment.receiptCode || data.payment.paymentCode,
         paymentCode: data.payment.paymentCode,
-        clientName: selectedLoan?.client_name || 'Cliente',
-        clientDocument: selectedLoan?.client_document || 'N/A',
+        clientName: data.payment.client?.name || selectedLoan?.client_name || 'Cliente',
+        clientDocument: data.payment.client?.document || selectedLoan?.client_document || 'N/A',
+        clientPhone: data.payment.client?.phone || (selectedLoan as any)?.phone || '+57 300 123 4561',
         loanCode: `${selectedLoan?.loan_code || 'PRE'} — ${getLoanLabel(selectedLoan)}`,
         amountPaid: data.payment.amountPaid,
         capitalPaid: data.payment.capitalPaid,
@@ -154,6 +157,7 @@ export default function PaymentModal({
         paymentMethod: paymentMethod,
         paymentDate: data.payment.paymentDate || paymentDate,
         notes: notes || `Abono a ${getLoanLabel(selectedLoan)}`,
+        items: data.payment.receiptItem ? [data.payment.receiptItem] : undefined,
       });
 
       setShowReceipt(true);

@@ -255,15 +255,93 @@ export async function POST(req: NextRequest) {
         ]
       );
 
+      // 10. Generar comprobante automático en tabla receipts
+      const [clientRows]: any = await conn.query(
+        'SELECT first_name, last_name, phone, document_number FROM clients WHERE id = ?',
+        [loan.client_id]
+      );
+      const client = clientRows[0] || {};
+      const clientFullName = `${client.first_name || ''} ${client.last_name || ''}`.trim() || 'Cliente';
+
+      let instNum: number | null = null;
+      let instDueDate: string | null = null;
+      if (targetInstallmentId) {
+        const [instInfo]: any = await conn.query(
+          'SELECT installment_number, due_date FROM installments WHERE id = ?',
+          [targetInstallmentId]
+        );
+        if (instInfo.length > 0) {
+          instNum = instInfo[0].installment_number;
+          instDueDate = instInfo[0].due_date ? new Date(instInfo[0].due_date).toISOString().slice(0, 10) : null;
+        }
+      }
+
+      const isFreeDebt = !targetInstallmentId;
+      const totalInsts = loan.installments_count ? Number(loan.installments_count) : null;
+      const remainingInsts = isFreeDebt || !totalInsts ? null : Math.max(0, totalInsts - (instNum || 0));
+
+      const receiptItem = {
+        loanId: loan.id,
+        loanCode: loan.loan_code,
+        installmentId: targetInstallmentId,
+        installmentNumber: instNum,
+        totalInstallments: totalInsts,
+        remainingInstallments: remainingInsts,
+        amountPaid,
+        capitalPaid: totalCapitalPaid,
+        interestPaid: totalInterestPaid,
+        remainingBalance: newLoanBalance,
+        totalAccumulatedPaid: newCapitalCollected + newInterestCollected,
+        dueDate: instDueDate,
+        isFreeDebt,
+        notes: notes ? notes.trim() : null,
+      };
+
+      const summaryData = {
+        totalReceived: amountPaid,
+        totalBalanceRemaining: newLoanBalance,
+        loansCount: 1,
+        paymentMethod: payment_method,
+      };
+
+      const [receiptInsert]: any = await conn.query(
+        `INSERT INTO receipts 
+          (receipt_code, client_id, loan_id, payment_id, receipt_type, is_consolidated, receipt_date, total_amount, client_name, client_phone, client_document, items_json, summary_json, notes)
+         VALUES (?, ?, ?, ?, 'INDIVIDUAL', 0, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          paymentCode,
+          loan.client_id,
+          loan.id,
+          payResult.insertId,
+          pDate,
+          amountPaid,
+          clientFullName,
+          client.phone || null,
+          client.document_number || null,
+          JSON.stringify([receiptItem]),
+          JSON.stringify(summaryData),
+          notes ? notes.trim() : `Recibo de pago ${paymentCode}`,
+        ]
+      );
+
       return {
         paymentId: payResult.insertId,
         paymentCode,
+        receiptId: receiptInsert.insertId,
+        receiptCode: paymentCode,
         amountPaid,
         capitalPaid: totalCapitalPaid,
         interestPaid: totalInterestPaid,
         newLoanBalance,
         newLoanStatus,
         paymentDate: pDate.toISOString(),
+        client: {
+          id: loan.client_id,
+          name: clientFullName,
+          phone: client.phone,
+          document: client.document_number,
+        },
+        receiptItem,
       };
     });
 

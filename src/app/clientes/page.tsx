@@ -31,6 +31,8 @@ import { formatCOP, formatDate, getLoanLabel } from '@/lib/calculations';
 import { exportToExcel } from '@/lib/exportUtils';
 import NewLoanModal from '@/components/NewLoanModal';
 import PaymentModal from '@/components/PaymentModal';
+import ReceiptModal from '@/components/ReceiptModal';
+import Link from 'next/link';
 
 export default function ClientsPage() {
   const router = useRouter();
@@ -52,6 +54,36 @@ export default function ClientsPage() {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedClientDetail, setSelectedClientDetail] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+
+  const handleOpenReceiptTicket = async (p: any) => {
+    try {
+      const res = await fetch(`/api/receipts?code=${encodeURIComponent(p.payment_code)}`);
+      const data = await res.json();
+      if (data.success && data.receipts?.length > 0) {
+        setSelectedReceipt(data.receipts[0]);
+        setIsReceiptOpen(true);
+        return;
+      }
+    } catch {}
+    setSelectedReceipt({
+      paymentCode: p.payment_code,
+      clientName: selectedClientDetail?.client
+        ? `${selectedClientDetail.client.first_name} ${selectedClientDetail.client.last_name}`
+        : 'Cliente',
+      clientDocument: selectedClientDetail?.client?.document_number || 'N/A',
+      clientPhone: selectedClientDetail?.client?.phone || '+57 300 123 4561',
+      loanCode: p.loan_code,
+      amountPaid: p.amount_paid,
+      capitalPaid: p.capital_paid,
+      interestPaid: p.interest_paid,
+      paymentMethod: p.payment_method,
+      paymentDate: p.payment_date,
+      notes: p.notes,
+    });
+    setIsReceiptOpen(true);
+  };
 
   // Formulario cliente
   const [formData, setFormData] = useState({
@@ -647,9 +679,20 @@ export default function ClientsPage() {
 
                 {/* Historial de Pagos y Abonos */}
                 <div>
-                  <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2.5">
-                    Historial de Abonos Recibidos ({selectedClientDetail.payments?.length || 0})
-                  </h4>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                      Historial de Abonos Recibidos ({selectedClientDetail.payments?.length || 0})
+                    </h4>
+                    {selectedClientDetail?.client?.id && (
+                      <Link
+                        href={`/recibos?clientId=${selectedClientDetail.client.id}`}
+                        className="text-[11px] font-bold text-[#A78BFA] hover:text-white flex items-center gap-1 transition-colors"
+                      >
+                        <span>Ver en Módulo de Recibos</span>
+                        <ChevronRight className="w-3 h-3" />
+                      </Link>
+                    )}
+                  </div>
                   <div className="rounded-2xl border border-[#2D2545] overflow-hidden bg-[#14121F]">
                     <div className="overflow-x-auto touch-scroll">
                       <table className="w-full text-left text-xs">
@@ -660,12 +703,13 @@ export default function ClientsPage() {
                             <th className="py-2.5 px-3">Valor Pagado</th>
                             <th className="py-2.5 px-3">Medio</th>
                             <th className="py-2.5 px-3">Fecha</th>
+                            <th className="py-2.5 px-3 text-right">Acción</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-[#221D33]/60">
                           {!selectedClientDetail.payments || selectedClientDetail.payments.length === 0 ? (
                             <tr>
-                              <td colSpan={5} className="text-center py-6 text-neutral-500">
+                              <td colSpan={6} className="text-center py-6 text-neutral-500">
                                 No hay abonos registrados para este cliente.
                               </td>
                             </tr>
@@ -677,6 +721,14 @@ export default function ClientsPage() {
                                 <td className="py-2.5 px-3 font-bold text-white">{formatCOP(p.amount_paid)}</td>
                                 <td className="py-2.5 px-3 text-neutral-400">{p.payment_method}</td>
                                 <td className="py-2.5 px-3 text-neutral-400">{formatDate(p.payment_date)}</td>
+                                <td className="py-2.5 px-3 text-right">
+                                  <button
+                                    onClick={() => handleOpenReceiptTicket(p)}
+                                    className="px-2.5 py-1 rounded-lg bg-[#252238] hover:bg-[#342F50] text-[#A78BFA] hover:text-white font-bold text-[10px] transition-colors cursor-pointer"
+                                  >
+                                    Ver Ticket PNG
+                                  </button>
+                                </td>
                               </tr>
                             ))
                           )}
@@ -738,6 +790,14 @@ export default function ClientsPage() {
           }
         }}
         defaultLoanId={selectedLoanIdForPayment}
+      />
+      <ReceiptModal
+        isOpen={isReceiptOpen}
+        onClose={() => {
+          setIsReceiptOpen(false);
+          setSelectedReceipt(null);
+        }}
+        receipt={selectedReceipt}
       />
     </div>
   );

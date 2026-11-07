@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import MobileNav from '@/components/MobileNav';
 import Header from '@/components/Header';
@@ -26,6 +27,7 @@ import {
   Wallet,
   Clock,
   ArrowRight,
+  FileCheck,
 } from 'lucide-react';
 import { Loan, Installment, Payment } from '@/lib/types';
 import { formatCOP, formatDate, getLoanLabel } from '@/lib/calculations';
@@ -216,6 +218,15 @@ export default function LoansPage() {
                   {status}
                 </button>
               ))}
+
+              <Link
+                href="/recibos"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-semibold bg-[#1A1828] hover:bg-[#252238] text-[#A78BFA] border border-[#3B3258] transition-colors"
+                title="Ver Comprobantes y Recibos PNG"
+              >
+                <FileCheck className="w-3.5 h-3.5" />
+                <span>Recibos</span>
+              </Link>
 
               <button
                 onClick={handleExportExcel}
