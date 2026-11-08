@@ -1,35 +1,59 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-function getTokenPayload(token: string | undefined): any | null {
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_fintech_loans_colombia_2026';
+
+/**
+ * Verificación criptográfica real de JWT mediante Web Crypto API (HMAC-SHA256).
+ * Valida formato, integridad de firma, expiración e identidad del rol.
+ */
+async function verifyTokenCryptographically(token: string | undefined): Promise<any | null> {
   if (!token) return null;
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+    const [headerB64, payloadB64, sigB64] = parts;
+
+    // 1. Decodificar payload y verificar expiración
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
     if (!payload || !payload.id || !payload.exp) return null;
     if (payload.exp * 1000 < Date.now()) return null;
-    return payload;
+
+    // 2. Verificar firma HMAC SHA-256
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(JWT_SECRET),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify']
+    );
+
+    const sigBuf = Buffer.from(sigB64, 'base64url');
+    const dataBuf = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
+
+    const isValid = await crypto.subtle.verify('HMAC', key, sigBuf, dataBuf);
+    return isValid ? payload : null;
   } catch {
     return null;
   }
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const authHeader = request.headers.get('Authorization');
   const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : undefined;
   const token = request.cookies.get('admin_token')?.value || bearerToken;
-  const payload = getTokenPayload(token);
+  
+  // Verificación criptográfica estricta
+  const payload = await verifyTokenCryptographically(token);
   const hasValidToken = !!payload;
 
   const isLoginPage = pathname === '/login';
   const isPublicApi =
     pathname.startsWith('/api/auth/login') ||
-    pathname.startsWith('/api/auth/logout') ||
-    pathname.startsWith('/api/auth/2fa');
+    pathname.startsWith('/api/auth/logout');
 
-  // Si el usuario ya está autenticado con token válido e intenta acceder a /login, redirigir al dashboard
+  // Si el usuario ya está autenticado con token criptográficamente válido e intenta acceder a /login, redirigir al dashboard
   if (isLoginPage && hasValidToken) {
     return NextResponse.redirect(new URL('/', request.url));
   }
@@ -50,10 +74,10 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Si no tiene token válido y está accediendo a una página o API protegida
+  // Si no tiene token criptográficamente válido y está accediendo a una página o API protegida
   if (!hasValidToken) {
     if (pathname.startsWith('/api/')) {
-      const resp = NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+      const resp = NextResponse.json({ error: 'No autorizado: Token inexistente o inválido.' }, { status: 401 });
       resp.cookies.delete('admin_token');
       return resp;
     }
@@ -103,4 +127,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };
-

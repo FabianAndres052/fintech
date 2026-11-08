@@ -225,23 +225,15 @@ CREATE TABLE `audit_logs` (
 
 
 -- =============================================================================
--- INSERCIÓN DE DATOS INICIALES (SEMILLAS / SEEDS)
+-- INSERCIÓN DE DATOS INICIALES (VALORES POR DEFECTO DEL SISTEMA)
 -- =============================================================================
 
--- Administrador principal
--- Usuario: AnaPosada55 / Correo: anaposada55@fintech.com
--- Contraseña: AnaPosada1001 (bcrypt hash de alta seguridad)
-INSERT INTO `administrators` (`name`, `username`, `email`, `password_hash`, `role`, `is_active`) 
-VALUES (
-  'Ana Posada',
-  'AnaPosada55',
-  'anaposada55@fintech.com', 
-  '$2b$12$n5s4VU/IzLP/8b72eQ2GeuAkGImMeMmW8kM5YkPewzA8GPFoG64XS', -- Hashed AnaPosada1001
-  'SUPERADMIN', 
-  1
-) ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `password_hash` = VALUES(`password_hash`);
+-- NOTA DE SEGURIDAD:
+-- Los usuarios administradores NO deben incluirse con contraseñas ni hashes en scripts públicos.
+-- La creación inicial de administradores se realiza mediante inicialización segura en backend
+-- con contraseñas provistas por variables de entorno y encriptadas con bcrypt (factor 12).
 
--- Métodos de pago colombianos estándar
+-- Métodos de pago estándar
 INSERT INTO `payment_methods` (`code`, `name`, `is_active`) VALUES
 ('EFECTIVO', 'Efectivo', 1),
 ('NEQUI', 'Nequi', 1),
@@ -250,7 +242,7 @@ INSERT INTO `payment_methods` (`code`, `name`, `is_active`) VALUES
 ('OTRO_BANCO', 'Otros Bancos (PSE / Transferencia)', 1)
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
--- Configuración predeterminada según reglas de negocio solicitadas
+-- Configuración predeterminada según reglas de negocio
 INSERT INTO `system_settings` (`setting_key`, `setting_value`, `description`) VALUES
 ('currency_symbol', 'COP', 'Moneda principal del sistema'),
 ('min_capital_amount', '100000', 'Monto mínimo de préstamo permitido ($100.000 COP)'),
@@ -260,17 +252,8 @@ INSERT INTO `system_settings` (`setting_key`, `setting_value`, `description`) VA
 ('max_installments_over_1m', '28', 'Máximo de cuotas para préstamos de $1.000.000 COP o superiores'),
 ('default_periodicity', 'SEMANAL', 'Periodicidad predeterminada (SEMANAL, QUINCENAL, MENSUAL)'),
 ('company_name', 'FINTECH', 'Nombre comercial de la entidad prestamista'),
-('company_nit', '901.849.201-4', 'NIT o Identificación tributaria'),
-('company_phone', '+57 300 123 4567', 'Teléfono de contacto administrativo'),
+('company_nit', '900.000.000-0', 'NIT o Identificación tributaria'),
+('company_phone', '+57 300 000 0000', 'Teléfono de contacto administrativo'),
 ('company_email', 'contacto@fintech.com', 'Correo de contacto institucional'),
-('current_cash_balance', '15000000.00', 'Capital total disponible en caja inicial ($15.000.000 COP)')
+('current_cash_balance', '0.00', 'Capital total disponible en caja inicial')
 ON DUPLICATE KEY UPDATE `description` = VALUES(`description`);
-
--- Aporte inicial a caja para poder prestar inmediatamente
-INSERT INTO `financial_movements` (
-  `movement_code` , `type`, `category`, `amount`, `capital_component`, `interest_component`, 
-  `payment_method`, `balance_after`, `description`, `reference_id`
-) VALUES (
-  'MOV-INIT-001', 'APORTE_CAPITAL', 'CAPITAL_INICIAL', 15000000.00, 15000000.00, 0.00, 
-  'EFECTIVO', 15000000.00, 'Aporte de capital inicial para apertura de cartera de préstamos', 'INIT'
-);

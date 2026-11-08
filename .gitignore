@@ -22,15 +22,20 @@
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
+*.key
+*.cert
+*.crt
 
-# debug
+# debug & logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
 
-# env files (can opt-in for committing if needed)
+# env files (secrets & connection strings)
 .env*
 !.env.example
 
@@ -41,5 +46,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
-.env*
+# scripts de mantenimiento y diagnóstico local con credenciales
+/scripts/
+
+# volcados, copias de seguridad y dumps de bases de datos
+*.dump
+*.sql.gz
+*.sql.tar
+database/backups/
+database/dumps/

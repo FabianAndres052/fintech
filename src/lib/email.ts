@@ -74,13 +74,13 @@ export async function send2FACodeEmail({ to, code, adminName, purpose }: Send2FA
     </html>
   `;
 
-  // Si no hay configuración SMTP, simular envío exitoso sin romper el flujo
+  // Si no hay configuración SMTP en entorno de desarrollo/fallback
   if (!host || !user || !pass) {
-    console.log(`[2FA LOCAL/FALLBACK] Código para ${to}: ${code} (${purpose})`);
+    console.log(`[2FA BACKEND CONSOLE] Código para ${to}: ${code} (${purpose})`);
     return {
       sent: true,
       simulated: true,
-      message: `Código 2FA generado exitosamente. (Modo simulación activo: ${code})`,
+      message: 'Código de seguridad generado y registrado en consola del servidor.',
     };
   }
 
@@ -95,19 +95,18 @@ export async function send2FACodeEmail({ to, code, adminName, purpose }: Send2FA
     await transporter.sendMail({
       from,
       to,
-      subject: `FINTECH — Código de Seguridad 2FA: ${code}`,
+      subject: `FINTECH — Código de Seguridad: ${code}`,
       html: htmlContent,
     });
 
-    return { sent: true, simulated: false };
+    return { sent: true, simulated: false, message: 'Código de seguridad enviado a su correo electrónico.' };
   } catch (error: any) {
-    console.error('Error enviando correo 2FA con nodemailer:', error);
-    // Fallback para no bloquear al usuario si el servidor SMTP rechaza la conexión
+    console.error('Error enviando correo con nodemailer:', error);
     return {
-      sent: true,
-      simulated: true,
+      sent: false,
+      simulated: false,
       fallbackError: error.message,
-      message: `El servidor SMTP reportó una demora. Para continuar, su código temporal es: ${code}`,
+      message: 'No fue posible entregar el correo de verificación. Verifique las credenciales SMTP en el servidor.',
     };
   }
 }
