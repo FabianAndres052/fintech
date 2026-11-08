@@ -379,20 +379,25 @@ export default function RecibosPage() {
 
                         {/* Desglose rápido de créditos incluidos */}
                         <div className="p-3 rounded-2xl bg-[#181626] border border-[#231E33] space-y-1.5 text-xs">
-                          {items.slice(0, 3).map((it, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-[11px]">
-                              <span className="text-neutral-300 font-semibold flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#E5092F]" />
-                                {it.loanCode}
-                                {!it.isFreeDebt && it.installmentNumber && (
-                                  <span className="text-neutral-400 font-normal text-[10px]">
-                                    (Cuota #{it.installmentNumber})
-                                  </span>
-                                )}
-                              </span>
-                              <span className="font-bold text-white">{formatCOP(it.amountPaid)}</span>
-                            </div>
-                          ))}
+                          {items.slice(0, 3).map((it, idx) => {
+                            const noteMatch = it.notes ? it.notes.match(/cuota\s*#?\s*(\d+)/i) : null;
+                            const instNum = it.installmentNumber ?? it.installment_number ?? (noteMatch ? noteMatch[1] : null);
+
+                            return (
+                              <div key={idx} className="flex justify-between items-center text-[11px]">
+                                <span className="text-neutral-300 font-semibold flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#E5092F]" />
+                                  {it.loanCode}
+                                  {!it.isFreeDebt && instNum && (
+                                    <span className="text-[#A78BFA] font-bold text-[10px]">
+                                      (Cuota #{instNum})
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="font-bold text-white">{formatCOP(it.amountPaid)}</span>
+                              </div>
+                            );
+                          })}
                           {items.length > 3 && (
                             <p className="text-[10px] text-[#A78BFA] italic text-right">
                               +{items.length - 3} créditos más...

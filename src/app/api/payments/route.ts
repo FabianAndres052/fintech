@@ -18,10 +18,13 @@ export async function GET(req: NextRequest) {
       SELECT 
         p.*,
         l.loan_code,
+        l.installments_count,
+        l.balance_remaining as loan_balance,
         CONCAT(c.first_name, ' ', c.last_name) as client_name,
         c.document_number as client_document,
         c.phone as client_phone,
-        i.installment_number
+        i.installment_number,
+        i.due_date as installment_due_date
       FROM payments p
       JOIN loans l ON p.loan_id = l.id
       JOIN clients c ON p.client_id = c.id

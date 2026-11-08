@@ -144,6 +144,26 @@ function CuotasContent() {
                 Todas las Cuotas
               </button>
               <button
+                onClick={() => setFilter('pendientes')}
+                className={`px-3.5 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
+                  filter === 'pendientes'
+                    ? 'bg-[#8B5CF6]/30 border border-[#8B5CF6] text-white font-bold shadow-md shadow-purple-950/50'
+                    : 'bg-[#14121F] text-[#A78BFA] hover:text-white border border-[#3A3258]'
+                }`}
+              >
+                Solo Pendientes
+              </button>
+              <button
+                onClick={() => setFilter('pagadas')}
+                className={`px-3.5 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
+                  filter === 'pagadas'
+                    ? 'bg-emerald-950/60 border border-emerald-600 text-emerald-300 font-bold shadow-md'
+                    : 'bg-[#14121F] text-emerald-400 hover:text-emerald-300 border border-emerald-900/30'
+                }`}
+              >
+                Solo Pagadas
+              </button>
+              <button
                 onClick={() => setFilter('mora')}
                 className={`px-3.5 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
                   filter === 'mora'
@@ -263,17 +283,23 @@ function CuotasContent() {
                           </td>
                           <td className="py-3.5 px-4">
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold tracking-wide uppercase ${
                                 inst.status === 'PAGADA'
-                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
                                   : isOverdue
-                                  ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse'
                                   : inst.status === 'PARCIAL'
-                                  ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                                  : 'bg-slate-800 text-slate-400'
+                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                  : 'bg-[#1C1A29] text-[#A78BFA] border border-[#3A3258]'
                               }`}
                             >
-                              {inst.status === 'PAGADA' ? 'PAGADA' : isOverdue ? 'EN MORA' : inst.status}
+                              {inst.status === 'PAGADA'
+                                ? 'PAGADA'
+                                : isOverdue
+                                ? `EN MORA (${inst.days_overdue}d)`
+                                : inst.status === 'PARCIAL'
+                                ? 'PARCIAL'
+                                : 'PENDIENTE'}
                             </span>
                           </td>
                           <td className="py-3.5 px-4 text-right">

@@ -19,6 +19,7 @@ import {
   Banknote,
   PlusCircle,
   FileCheck,
+  Trash2,
 } from 'lucide-react';
 import { Payment } from '@/lib/types';
 import { formatCOP, formatDate } from '@/lib/calculations';
@@ -82,6 +83,29 @@ export default function PagosPage() {
   const totalCapital = filteredPayments.reduce((acc, p) => acc + Number(p.capital_paid), 0);
   const totalInterest = filteredPayments.reduce((acc, p) => acc + Number(p.interest_paid), 0);
 
+  const handleDeletePayment = async (paymentId: number, paymentCode: string) => {
+    if (
+      !confirm(
+        `¿Está seguro de anular y revertir el pago ${paymentCode}?\n\nEsta acción:\n- Devolverá la cuota a estado PENDIENTE.\n- Restaurará el saldo original del crédito.\n- Ajustará el saldo de caja disponible.\n- Eliminará el recibo del sistema.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/payments/${paymentId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al revertir el pago.');
+
+      alert(data.message || 'Pago revertido y eliminado correctamente.');
+      fetchPayments();
+    } catch (err: any) {
+      alert(err.message || 'Error al eliminar el pago.');
+    }
+  };
+
   const handleOpenReceipt = async (p: Payment) => {
     try {
       const res = await fetch(`/api/receipts?code=${encodeURIComponent(p.payment_code)}`);
@@ -101,10 +125,12 @@ export default function PagosPage() {
       clientDocument: p.client_document || 'N/A',
       clientPhone: (p as any).client_phone || '+57 300 123 4561',
       loanCode: p.loan_code || 'PRE',
+      installment_number: p.installment_number,
+      installments_count: (p as any).installments_count,
       amountPaid: p.amount_paid,
       capitalPaid: p.capital_paid,
       interestPaid: p.interest_paid,
-      newLoanBalance: 0,
+      newLoanBalance: (p as any).loan_balance || 0,
       paymentMethod: p.payment_method,
       paymentDate: p.payment_date,
       notes: p.notes,
@@ -224,57 +250,82 @@ export default function PagosPage() {
                   <tr>
                     <th className="py-3 px-4">Recibo</th>
                     <th className="py-3 px-4">Préstamo</th>
+                    <th className="py-3 px-4">Cuota</th>
                     <th className="py-3 px-4">Cliente</th>
                     <th className="py-3 px-4">Total Pagado</th>
                     <th className="py-3 px-4">Capital</th>
                     <th className="py-3 px-4">Interés Ganado</th>
                     <th className="py-3 px-4">Medio</th>
                     <th className="py-3 px-4">Fecha</th>
-                    <th className="py-3 px-4 text-right">Comprobante</th>
+                    <th className="py-3 px-4 text-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#221D33]/60 bg-[#121118]">
                   {filteredPayments.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="text-center py-10 text-slate-500">
+                      <td colSpan={10} className="text-center py-10 text-slate-500">
                         {loading ? 'Cargando pagos...' : 'No hay pagos registrados en el sistema.'}
                       </td>
                     </tr>
                   ) : (
-                    filteredPayments.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-900/60 transition-colors">
-                        <td className="py-3 px-4 font-mono font-bold text-emerald-400">
-                          {p.payment_code}
-                        </td>
-                        <td className="py-3 px-4 font-mono text-slate-300">{p.loan_code}</td>
-                        <td className="py-3 px-4">
-                          <p className="font-bold text-white">{p.client_name}</p>
-                          <p className="text-[10px] text-slate-400">CC: {p.client_document}</p>
-                        </td>
-                        <td className="py-3 px-4 font-black text-white">{formatCOP(p.amount_paid)}</td>
-                        <td className="py-3 px-4 font-semibold text-indigo-300">
-                          {formatCOP(p.capital_paid)}
-                        </td>
-                        <td className="py-3 px-4 font-semibold text-emerald-400">
-                          {formatCOP(p.interest_paid)}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="px-2 py-0.5 rounded-full bg-slate-800 text-[10px] font-medium text-slate-300">
-                            {p.payment_method}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-slate-400">{formatDate(p.payment_date)}</td>
-                        <td className="py-3 px-4 text-right">
-                          <button
-                            onClick={() => handleOpenReceipt(p)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-                            title="Ver e Imprimir Comprobante"
-                          >
-                            <Printer className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                    filteredPayments.map((p) => {
+                      const cuotaMatch = p.notes ? p.notes.match(/cuota\s*#?\s*(\d+)/i) : null;
+                      const cuotaNumber = p.installment_number || (cuotaMatch ? cuotaMatch[1] : null);
+
+                      return (
+                        <tr key={p.id} className="hover:bg-slate-900/60 transition-colors">
+                          <td className="py-3 px-4 font-mono font-bold text-emerald-400">
+                            {p.payment_code}
+                          </td>
+                          <td className="py-3 px-4 font-mono text-slate-300">{p.loan_code}</td>
+                          <td className="py-3 px-4">
+                            {cuotaNumber ? (
+                              <span className="px-2 py-0.5 rounded-lg bg-[#1C1A29] border border-[#3A3258] text-[#A78BFA] font-bold text-[11px] whitespace-nowrap">
+                                Cuota #{cuotaNumber}
+                                {(p as any).installments_count ? ` / ${(p as any).installments_count}` : ''}
+                              </span>
+                            ) : (
+                              <span className="text-neutral-400 text-[10px]">Abono Libre</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <p className="font-bold text-white">{p.client_name}</p>
+                            <p className="text-[10px] text-slate-400">CC: {p.client_document}</p>
+                          </td>
+                          <td className="py-3 px-4 font-black text-white">{formatCOP(p.amount_paid)}</td>
+                          <td className="py-3 px-4 font-semibold text-indigo-300">
+                            {formatCOP(p.capital_paid)}
+                          </td>
+                          <td className="py-3 px-4 font-semibold text-emerald-400">
+                            {formatCOP(p.interest_paid)}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="px-2 py-0.5 rounded-full bg-slate-800 text-[10px] font-medium text-slate-300">
+                              {p.payment_method}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-slate-400">{formatDate(p.payment_date)}</td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => handleOpenReceipt(p)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                                title="Ver e Imprimir Comprobante"
+                              >
+                                <Printer className="w-4 h-4 text-[#A78BFA]" />
+                              </button>
+                              <button
+                                onClick={() => handleDeletePayment(p.id, p.payment_code)}
+                                className="p-1.5 rounded-lg text-rose-400 hover:text-rose-200 hover:bg-rose-950/50 transition-colors cursor-pointer"
+                                title="Revertir y eliminar pago"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>

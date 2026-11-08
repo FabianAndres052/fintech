@@ -39,6 +39,10 @@ export async function GET(req: NextRequest) {
       sql += ' AND i.due_date = CURDATE() AND i.status IN ("PENDIENTE", "PARCIAL")';
     } else if (filter === 'semana') {
       sql += ' AND i.due_date >= CURDATE() AND i.due_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY) AND i.status IN ("PENDIENTE", "PARCIAL")';
+    } else if (filter === 'pendientes') {
+      sql += ' AND i.status IN ("PENDIENTE", "PARCIAL", "VENCIDA")';
+    } else if (filter === 'pagadas') {
+      sql += ' AND i.status = "PAGADA"';
     } else if (status && status !== 'TODAS') {
       sql += ' AND i.status = ?';
       params.push(status);

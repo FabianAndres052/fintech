@@ -75,6 +75,9 @@ export default function ClientsPage() {
       clientDocument: selectedClientDetail?.client?.document_number || 'N/A',
       clientPhone: selectedClientDetail?.client?.phone || '+57 300 123 4561',
       loanCode: p.loan_code,
+      installment_number: p.installment_number,
+      installments_count: p.installments_count,
+      remaining_balance: p.loan_balance,
       amountPaid: p.amount_paid,
       capitalPaid: p.capital_paid,
       interestPaid: p.interest_paid,
@@ -217,6 +220,9 @@ export default function ClientsPage() {
 
       setIsClientModalOpen(false);
       fetchClients();
+      if (editingClient) {
+        handleOpenDetail(editingClient.id);
+      }
     } catch (err: any) {
       setFormError(err.message);
     } finally {
@@ -381,6 +387,17 @@ export default function ClientsPage() {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEdit(c);
+                        }}
+                        className="p-2 rounded-xl bg-[#1C1A29] hover:bg-[#2A2640] border border-[#3A3258] text-[#A78BFA] hover:text-white transition-all cursor-pointer shadow-sm active:scale-95"
+                        title="Modificar información del cliente"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
                       <ChevronRight className="w-5 h-5 text-neutral-500 group-hover:text-white transition-colors" />
                     </div>
                   </div>
@@ -576,12 +593,26 @@ export default function ClientsPage() {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setDetailModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDetailModalOpen(false);
+                    handleOpenEdit(selectedClientDetail.client);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1C1A29] hover:bg-[#2A2640] border border-[#8B5CF6]/40 text-[#A78BFA] hover:text-white text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                  title="Modificar información de este cliente"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  <span>Editar</span>
+                </button>
+                <button
+                  onClick={() => setDetailModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Contenido con Scroll Interno */}
@@ -741,7 +772,7 @@ export default function ClientsPage() {
             ) : null}
 
             {/* Footer Fijo Modal */}
-            <div className="shrink-0 p-4 border-t border-[#221D33] bg-[#0E0D14]/98 pb-[max(1rem,env(safe-area-inset-bottom))] flex items-center justify-between">
+            <div className="shrink-0 p-4 border-t border-[#221D33] bg-[#0E0D14]/98 pb-[max(1rem,env(safe-area-inset-bottom))] flex items-center justify-between gap-2">
               <button
                 onClick={() => setDetailModalOpen(false)}
                 className="px-4 py-2.5 rounded-2xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors cursor-pointer"
@@ -749,18 +780,31 @@ export default function ClientsPage() {
                 Cerrar
               </button>
 
-              {selectedClientDetail?.client?.status !== 'BLOQUEADO' && (
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
                     setDetailModalOpen(false);
-                    handleLoanForClient(selectedClientDetail.client.id);
+                    handleOpenEdit(selectedClientDetail.client);
                   }}
-                  className="px-4 py-2.5 rounded-2xl text-xs font-bold bg-[#1C1A29] hover:bg-[#252238] border border-[#8B5CF6]/40 text-white transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
+                  className="px-4 py-2.5 rounded-2xl text-xs font-bold bg-[#1C1A29] hover:bg-[#252238] border border-[#8B5CF6]/40 text-[#A78BFA] hover:text-white transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
                 >
-                  <PlusCircle className="w-4 h-4 text-[#8B5CF6]" />
-                  <span>Nuevo Préstamo</span>
+                  <Edit2 className="w-4 h-4" />
+                  <span>Modificar Datos</span>
                 </button>
-              )}
+
+                {selectedClientDetail?.client?.status !== 'BLOQUEADO' && (
+                  <button
+                    onClick={() => {
+                      setDetailModalOpen(false);
+                      handleLoanForClient(selectedClientDetail.client.id);
+                    }}
+                    className="px-4 py-2.5 rounded-2xl text-xs font-bold bg-gradient-to-r from-[#E5092F] to-[#C40726] hover:from-[#FF1744] hover:to-[#E5092F] text-white transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-md shadow-red-950/50"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                    <span>Nuevo Préstamo</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

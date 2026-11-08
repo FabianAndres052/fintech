@@ -27,9 +27,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Historial de pagos del cliente
     const payments = await query<any[]>(
-      `SELECT p.*, l.loan_code 
+      `SELECT p.*, l.loan_code, l.installments_count, l.balance_remaining as loan_balance, i.installment_number, i.due_date as installment_due_date 
        FROM payments p 
        JOIN loans l ON p.loan_id = l.id 
+       LEFT JOIN installments i ON p.installment_id = i.id
        WHERE p.client_id = ? 
        ORDER BY p.id DESC`,
       [clientId]
@@ -71,7 +72,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       status,
     } = body;
 
-    const cleanDoc = document_number !== undefined ? (document_number && String(document_number).trim() ? String(document_number).trim() : null) : undefined;
+    const currentRows = await query<any[]>('SELECT * FROM clients WHERE id = ?', [clientId]);
+    if (!currentRows || currentRows.length === 0) {
+      return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 });
+    }
+    const cur = currentRows[0];
+
+    const cleanDoc = document_number !== undefined
+      ? (document_number && String(document_number).trim() ? String(document_number).trim() : null)
+      : cur.document_number;
+
     if (cleanDoc) {
       const existing = await query<any[]>('SELECT id FROM clients WHERE document_number = ? AND id != ? LIMIT 1', [
         cleanDoc,
@@ -85,38 +95,46 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
 
+    const updatedFirstName = first_name !== undefined ? String(first_name).trim() : cur.first_name;
+    const updatedLastName = last_name !== undefined ? String(last_name).trim() : cur.last_name;
+    const updatedDocType = document_type !== undefined ? document_type : (cur.document_type || 'CC');
+    const updatedPhone = phone !== undefined ? String(phone).trim() : cur.phone;
+    const updatedEmail = email !== undefined ? (email ? String(email).trim() : null) : cur.email;
+    const updatedAddress = address !== undefined ? String(address).trim() : cur.address;
+    const updatedCity = city !== undefined ? String(city).trim() : cur.city;
+    const updatedOccupation = occupation !== undefined ? String(occupation).trim() : cur.occupation;
+    const updatedIncome = monthly_income !== undefined ? Number(monthly_income) : cur.monthly_income;
+    const updatedNotes = notes !== undefined ? String(notes).trim() : cur.notes;
+    const updatedStatus = status !== undefined ? status : cur.status;
+
     await query(
       `UPDATE clients SET
-        document_type = COALESCE(?, document_type),
-        document_number = CASE WHEN ? = 1 THEN ? ELSE document_number END,
-        first_name = COALESCE(?, first_name),
-        last_name = CASE WHEN ? IS NOT NULL THEN ? ELSE last_name END,
-        phone = CASE WHEN ? IS NOT NULL THEN ? ELSE phone END,
+        document_type = ?,
+        document_number = ?,
+        first_name = ?,
+        last_name = ?,
+        phone = ?,
         email = ?,
-        address = CASE WHEN ? IS NOT NULL THEN ? ELSE address END,
-        city = COALESCE(?, city),
+        address = ?,
+        city = ?,
         occupation = ?,
         monthly_income = ?,
         notes = ?,
-        status = COALESCE(?, status)
+        status = ?
        WHERE id = ?`,
       [
-        document_type || null,
-        cleanDoc !== undefined ? 1 : 0,
-        cleanDoc || null,
-        first_name ? String(first_name).trim() : null,
-        last_name !== undefined ? String(last_name).trim() : null,
-        last_name !== undefined ? String(last_name).trim() : null,
-        phone !== undefined ? String(phone).trim() : null,
-        phone !== undefined ? String(phone).trim() : null,
-        email ? String(email).trim() : null,
-        address !== undefined ? String(address).trim() : null,
-        address !== undefined ? String(address).trim() : null,
-        city ? String(city).trim() : null,
-        occupation ? String(occupation).trim() : null,
-        monthly_income !== undefined ? Number(monthly_income) : 0,
-        notes ? String(notes).trim() : null,
-        status,
+        updatedDocType,
+        cleanDoc,
+        updatedFirstName,
+        updatedLastName,
+        updatedPhone,
+        updatedEmail,
+        updatedAddress,
+        updatedCity,
+        updatedOccupation,
+        updatedIncome,
+        updatedNotes,
+        updatedStatus,
         clientId,
       ]
     );
