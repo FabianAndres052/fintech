@@ -53,8 +53,8 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       const [authRes, dashRes] = await Promise.all([
-        fetch('/api/auth/me'),
-        fetch('/api/dashboard'),
+        fetch('/api/auth/me', { cache: 'no-store' }),
+        fetch('/api/dashboard', { cache: 'no-store' }),
       ]);
 
       const authData = await authRes.json().catch(() => ({}));

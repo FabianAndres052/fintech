@@ -69,13 +69,13 @@ export default function RecibosPage() {
       if (typeFilter !== 'ALL') url += `&type=${typeFilter}`;
       if (dateFilter) url += `&date=${dateFilter}`;
 
-      const res = await fetch(url);
+      const res = await fetch(url, { cache: 'no-store' });
       const data = await res.json();
       if (data.success) {
         setReceipts(data.receipts);
       }
 
-      const clientRes = await fetch('/api/clients');
+      const clientRes = await fetch('/api/clients', { cache: 'no-store' });
       const clientData = await clientRes.json();
       if (clientData.success) {
         setClients(clientData.clients);
@@ -94,7 +94,7 @@ export default function RecibosPage() {
   // Cargar pagos del cliente para consolidación
   useEffect(() => {
     if (isConsolidateModalOpen && selectedConsolidateClient) {
-      fetch(`/api/payments?clientId=${selectedConsolidateClient}&limit=30`)
+      fetch(`/api/payments?clientId=${selectedConsolidateClient}&limit=30`, { cache: 'no-store' })
         .then((r) => r.json())
         .then((d) => {
           if (d.success) {

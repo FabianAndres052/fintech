@@ -52,13 +52,13 @@ function CuotasContent() {
       let url = `/api/installments?filter=${filter}`;
       if (search) url += `&search=${encodeURIComponent(search)}`;
 
-      const res = await fetch(url);
+      const res = await fetch(url, { cache: 'no-store' });
       const data = await res.json();
       if (data.success) {
         setInstallments(data.installments);
       }
 
-      const dashRes = await fetch('/api/dashboard');
+      const dashRes = await fetch('/api/dashboard', { cache: 'no-store' });
       const dashData = await dashRes.json();
       if (dashData.success) {
         setAvailableCash(dashData.stats.available_cash);

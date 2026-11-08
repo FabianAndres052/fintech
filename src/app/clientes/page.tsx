@@ -59,7 +59,7 @@ export default function ClientsPage() {
 
   const handleOpenReceiptTicket = async (p: any) => {
     try {
-      const res = await fetch(`/api/receipts?code=${encodeURIComponent(p.payment_code)}`);
+      const res = await fetch(`/api/receipts?code=${encodeURIComponent(p.payment_code)}`, { cache: 'no-store' });
       const data = await res.json();
       if (data.success && data.receipts?.length > 0) {
         setSelectedReceipt(data.receipts[0]);
@@ -115,13 +115,13 @@ export default function ClientsPage() {
         return;
       }
 
-      const res = await fetch(`/api/clients${search ? `?search=${encodeURIComponent(search)}` : ''}`);
+      const res = await fetch(`/api/clients${search ? `?search=${encodeURIComponent(search)}` : ''}`, { cache: 'no-store' });
       const data = await res.json();
       if (data.success) {
         setClients(data.clients);
       }
 
-      const dashRes = await fetch('/api/dashboard');
+      const dashRes = await fetch('/api/dashboard', { cache: 'no-store' });
       const dashData = await dashRes.json();
       if (dashData.success) {
         setAvailableCash(dashData.stats.available_cash);
@@ -181,7 +181,7 @@ export default function ClientsPage() {
     setDetailLoading(true);
     setDetailModalOpen(true);
     try {
-      const res = await fetch(`/api/clients/${id}`);
+      const res = await fetch(`/api/clients/${id}`, { cache: 'no-store' });
       const data = await res.json();
       if (data.success) {
         setSelectedClientDetail(data);

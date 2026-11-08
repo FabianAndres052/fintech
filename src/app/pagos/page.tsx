@@ -46,13 +46,13 @@ export default function PagosPage() {
         return;
       }
 
-      const res = await fetch('/api/payments?limit=200');
+      const res = await fetch('/api/payments?limit=200', { cache: 'no-store' });
       const data = await res.json();
       if (data.success) {
         setPayments(data.payments);
       }
 
-      const dashRes = await fetch('/api/dashboard');
+      const dashRes = await fetch('/api/dashboard', { cache: 'no-store' });
       const dashData = await dashRes.json();
       if (dashData.success) {
         setAvailableCash(dashData.stats.available_cash);

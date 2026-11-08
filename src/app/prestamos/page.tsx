@@ -64,13 +64,13 @@ export default function LoansPage() {
       let url = `/api/loans?status=${statusFilter}`;
       if (search) url += `&search=${encodeURIComponent(search)}`;
 
-      const res = await fetch(url);
+      const res = await fetch(url, { cache: 'no-store' });
       const data = await res.json();
       if (data.success) {
         setLoans(data.loans);
       }
 
-      const dashRes = await fetch('/api/dashboard');
+      const dashRes = await fetch('/api/dashboard', { cache: 'no-store' });
       const dashData = await dashRes.json();
       if (dashData.success) {
         setAvailableCash(dashData.stats.available_cash);
@@ -91,7 +91,7 @@ export default function LoansPage() {
     setActiveTab('resumen');
     setDetailModalOpen(true);
     try {
-      const res = await fetch(`/api/loans/${id}`);
+      const res = await fetch(`/api/loans/${id}`, { cache: 'no-store' });
       const data = await res.json();
       if (data.success) {
         setSelectedLoanDetail(data.loan);

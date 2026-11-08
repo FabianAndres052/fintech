@@ -49,8 +49,8 @@ export default function ContabilidadPage() {
       }
 
       const [cashRes, dashRes] = await Promise.all([
-        fetch('/api/cash').then((r) => r.json()),
-        fetch('/api/dashboard').then((r) => r.json()),
+        fetch('/api/cash', { cache: 'no-store' }).then((r) => r.json()),
+        fetch('/api/dashboard', { cache: 'no-store' }).then((r) => r.json()),
       ]);
 
       if (cashRes.success) {

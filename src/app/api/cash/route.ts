@@ -52,12 +52,16 @@ export async function GET(req: NextRequest) {
       FROM financial_movements
     `);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       currentCash,
       movements,
       summary: accountingSummary[0] || {},
     });
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    return response;
   } catch (error: any) {
     console.error('Error fetching cash movements:', error);
     return NextResponse.json({ error: 'Error al consultar movimientos de caja.' }, { status: 500 });

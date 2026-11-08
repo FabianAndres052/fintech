@@ -281,9 +281,8 @@ export default function ReceiptModal({
         if (it.isFreeDebt) {
           msg += `   • Concepto: Abono libre a deuda congelada\n`;
         } else {
-          msg += `   • Cuota pagada: #${it.installmentNumber || 'N/A'}${
-            it.totalInstallments ? ` de ${it.totalInstallments}` : ''
-          }\n`;
+          msg += `   • Cuota pagada: #${it.installmentNumber || 'N/A'}${it.totalInstallments ? ` de ${it.totalInstallments}` : ''
+            }\n`;
           if (it.remainingInstallments !== null && it.remainingInstallments !== undefined) {
             msg += `   • Cuotas pendientes: ${it.remainingInstallments}\n`;
           }
@@ -297,9 +296,8 @@ export default function ReceiptModal({
       if (it.isFreeDebt) {
         msg += `   • Concepto: Abono libre a capital / deuda congelada\n`;
       } else {
-        msg += `   • Cuota pagada: #${it.installmentNumber || 'N/A'}${
-          it.totalInstallments ? ` de ${it.totalInstallments}` : ''
-        }\n`;
+        msg += `   • Cuota pagada: #${it.installmentNumber || 'N/A'}${it.totalInstallments ? ` de ${it.totalInstallments}` : ''
+          }\n`;
         if (it.remainingInstallments !== null && it.remainingInstallments !== undefined) {
           msg += `   • Cuotas pendientes: ${it.remainingInstallments}\n`;
         }
@@ -444,9 +442,8 @@ export default function ReceiptModal({
         doc.setTextColor(160, 160, 175);
         const concept = it.isFreeDebt
           ? 'Abono libre a deuda'
-          : `Cuota #${it.installmentNumber || 'N/A'}${it.totalInstallments ? ` de ${it.totalInstallments}` : ''} (${
-              it.remainingInstallments ?? 0
-            } rest.)`;
+          : `Cuota #${it.installmentNumber || 'N/A'}${it.totalInstallments ? ` de ${it.totalInstallments}` : ''} (${it.remainingInstallments ?? 0
+          } rest.)`;
         doc.text(concept, 13, y + 9);
 
         doc.setFont('helvetica', 'bold');
@@ -769,9 +766,8 @@ export default function ReceiptModal({
           <div className="mt-4 p-3 rounded-2xl bg-[#12111E] border border-[#2D2545] flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <div
-                className={`w-7 h-7 rounded-xl flex items-center justify-center ${
-                  whatsappSent ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-neutral-800 text-neutral-400'
-                }`}
+                className={`w-7 h-7 rounded-xl flex items-center justify-center ${whatsappSent ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-neutral-800 text-neutral-400'
+                  }`}
               >
                 <CheckCircle2 className="w-4 h-4" />
               </div>
@@ -789,11 +785,10 @@ export default function ReceiptModal({
             <button
               onClick={handleConfirmSent}
               disabled={updatingSent}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                whatsappSent
-                  ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950'
-              }`}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${whatsappSent
+                ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950'
+                }`}
             >
               {updatingSent ? 'Guardando...' : whatsappSent ? 'Desmarcar' : 'Confirmar Envío'}
             </button>

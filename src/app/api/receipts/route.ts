@@ -73,7 +73,11 @@ export async function GET(req: NextRequest) {
       summary: parseJsonField(r.summary_json) || {},
     }));
 
-    return NextResponse.json({ success: true, receipts });
+    const response = NextResponse.json({ success: true, receipts });
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    return response;
   } catch (error: any) {
     console.error('Error in GET /api/receipts:', error);
     return NextResponse.json({ error: 'Error al consultar recibos.' }, { status: 500 });

@@ -47,7 +47,7 @@ export default function CajaPage() {
         url += `&search=${encodeURIComponent(search)}`;
       }
 
-      const res = await fetch(url);
+      const res = await fetch(url, { cache: 'no-store' });
       const data = await res.json();
       if (data.success) {
         setMovements(data.movements);

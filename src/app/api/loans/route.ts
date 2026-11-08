@@ -51,7 +51,11 @@ export async function GET(req: NextRequest) {
 
     const loans = await query<any[]>(sql, params);
 
-    return NextResponse.json({ success: true, loans });
+    const response = NextResponse.json({ success: true, loans });
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    return response;
   } catch (error: any) {
     console.error('Error fetching loans:', error);
     return NextResponse.json({ error: 'Error al consultar préstamos.' }, { status: 500 });
