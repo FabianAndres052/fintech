@@ -27,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Historial de pagos del cliente
     const payments = await query<any[]>(
-      `SELECT p.*, l.loan_code, l.installments_count, l.balance_remaining as loan_balance, i.installment_number, i.due_date as installment_due_date 
+      `SELECT p.*, l.loan_code, l.capital_amount, l.total_amount, l.disbursement_date, l.status as loan_status, l.installments_count, l.balance_remaining as loan_balance, i.installment_number, i.due_date as installment_due_date 
        FROM payments p 
        JOIN loans l ON p.loan_id = l.id 
        LEFT JOIN installments i ON p.installment_id = i.id

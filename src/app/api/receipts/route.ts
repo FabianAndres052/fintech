@@ -113,6 +113,9 @@ export async function POST(req: NextRequest) {
         `SELECT 
           p.*,
           l.loan_code,
+          l.capital_amount,
+          l.disbursement_date,
+          l.status as loan_status,
           l.total_amount as loan_total,
           l.balance_remaining as loan_balance,
           l.installments_count,
@@ -160,6 +163,10 @@ export async function POST(req: NextRequest) {
         items.push({
           loanId: p.loan_id,
           loanCode: p.loan_code,
+          disbursementDate: p.disbursement_date ? new Date(p.disbursement_date).toISOString().slice(0, 10) : null,
+          capitalAmount: Number(p.capital_amount || 0),
+          totalAmount: Number(p.loan_total || 0),
+          loanStatus: remBal <= 0 ? 'COMPLETADO' : (p.loan_status || 'ACTIVO'),
           installmentId: p.installment_id,
           installmentNumber: p.installment_number || null,
           totalInstallments: totalInsts,
@@ -170,6 +177,8 @@ export async function POST(req: NextRequest) {
           remainingBalance: remBal,
           totalAccumulatedPaid: accumPaid,
           dueDate: p.inst_due_date ? new Date(p.inst_due_date).toISOString().slice(0, 10) : null,
+          paymentDate: p.payment_date ? new Date(p.payment_date).toISOString() : null,
+          paymentMethod: p.payment_method || 'TRANSFERENCIA',
           isFreeDebt,
           notes: p.notes,
         });

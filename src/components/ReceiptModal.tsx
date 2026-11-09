@@ -16,6 +16,11 @@ import {
   Check,
   Layers,
   Sparkles,
+  Calendar,
+  CreditCard,
+  DollarSign,
+  TrendingDown,
+  ShieldCheck,
 } from 'lucide-react';
 import { formatCOP, formatDate } from '@/lib/calculations';
 import { toPng, toBlob } from 'html-to-image';
@@ -24,7 +29,16 @@ import jsPDF from 'jspdf';
 export interface ReceiptItem {
   loanId: number;
   loanCode: string;
+  disbursementDate?: string | null;
+  disbursement_date?: string | null;
+  capitalAmount?: number;
+  capital_amount?: number;
+  totalAmount?: number;
+  total_amount?: number;
+  loanStatus?: string;
+  loan_status?: string;
   installmentId?: number | null;
+  installment_id?: number | null;
   installmentNumber?: number | null;
   installment_number?: number | null;
   totalInstallments?: number | null;
@@ -32,12 +46,23 @@ export interface ReceiptItem {
   remainingInstallments?: number | null;
   remaining_installments?: number | null;
   amountPaid: number;
+  amount_paid?: number;
   capitalPaid?: number;
+  capital_paid?: number;
   interestPaid?: number;
+  interest_paid?: number;
   remainingBalance: number;
+  remaining_balance?: number;
   totalAccumulatedPaid?: number;
+  total_accumulated_paid?: number;
   dueDate?: string | null;
+  due_date?: string | null;
+  paymentDate?: string | null;
+  payment_date?: string | null;
+  paymentMethod?: string;
+  payment_method?: string;
   isFreeDebt?: boolean;
+  is_free_debt?: boolean;
   notes?: string | null;
 }
 
@@ -115,7 +140,6 @@ function normalizeItem(raw: any, parent: any): ReceiptItem {
     if (cuotaMatch) {
       instNum = parseInt(cuotaMatch[1], 10);
     } else {
-      // Intentar extraer del sufijo de recibo o payment code (ej: REC-PRE-00001-05 -> 5)
       const codeStr = parent.receipt_code || parent.paymentCode || raw.loanCode || '';
       const suffixMatch = codeStr.match(/-0*(\d{1,2})$/);
       if (suffixMatch) {
@@ -137,12 +161,6 @@ function normalizeItem(raw: any, parent: any): ReceiptItem {
     const totalMatch = combinedNotes.match(/de\s+(\d+)/i);
     if (totalMatch) {
       totalInsts = parseInt(totalMatch[1], 10);
-    } else {
-      const lCode = (raw.loanCode || parent.loan_code || parent.loanCode || '').toUpperCase();
-      if (lCode.includes('PRE-00001')) totalInsts = 12;
-      else if (lCode.includes('PRE-00002')) totalInsts = 28;
-      else if (lCode.includes('PRE-00003')) totalInsts = 28;
-      else if (lCode.includes('PRE-00006')) totalInsts = 20;
     }
   }
 
@@ -161,8 +179,8 @@ function normalizeItem(raw: any, parent: any): ReceiptItem {
   const capitalPaid = Number(raw.capitalPaid ?? raw.capital_paid ?? parent.capital_paid ?? parent.capitalPaid ?? 0);
   const interestPaid = Number(raw.interestPaid ?? raw.interest_paid ?? parent.interest_paid ?? parent.interestPaid ?? 0);
 
-  // 4. Saldo restante del crédito
-  let remainingBal = Number(
+  // 4. Saldo restante real después de este pago
+  const remainingBal = Number(
     raw.remainingBalance ??
     raw.remaining_balance ??
     raw.loan_balance ??
@@ -171,22 +189,21 @@ function normalizeItem(raw: any, parent: any): ReceiptItem {
     0
   );
 
-  if (remainingBal === 0 && !isFreeDebt) {
-    const lCode = (raw.loanCode || parent.loan_code || parent.loanCode || '').toUpperCase();
-    if (lCode.includes('PRE-00001')) remainingBal = 605000;
-    else if (lCode.includes('PRE-00002')) remainingBal = 2125000;
-    else if (lCode.includes('PRE-00003')) remainingBal = 2295000;
-  }
-
-  // 5. Total acumulado abonado
-  let totalAccum = Number(raw.totalAccumulatedPaid ?? raw.total_accumulated_paid ?? parent.totalAccumulatedPaid ?? 0);
-  if (!totalAccum && instNum && amountPaid > 0) {
-    totalAccum = instNum * amountPaid;
-  }
+  // 5. Total acumulado abonado a este crédito
+  const totalAccum = Number(
+    raw.totalAccumulatedPaid ??
+    raw.total_accumulated_paid ??
+    parent.totalAccumulatedPaid ??
+    0
+  );
 
   return {
     loanId: Number(raw.loanId ?? raw.loan_id ?? parent.loan_id ?? 0),
     loanCode: String(raw.loanCode || raw.loan_code || parent.loan_code || parent.loanCode || 'PRE-00001'),
+    disbursementDate: raw.disbursementDate ?? raw.disbursement_date ?? parent.disbursementDate ?? parent.disbursement_date ?? null,
+    capitalAmount: Number(raw.capitalAmount ?? raw.capital_amount ?? parent.capitalAmount ?? parent.capital_amount ?? 0),
+    totalAmount: Number(raw.totalAmount ?? raw.total_amount ?? parent.totalAmount ?? parent.total_amount ?? 0),
+    loanStatus: raw.loanStatus ?? raw.loan_status ?? parent.loanStatus ?? parent.loan_status ?? 'ACTIVO',
     installmentId: raw.installmentId ?? raw.installment_id ?? null,
     installmentNumber: isFreeDebt ? null : instNum,
     totalInstallments: isFreeDebt ? null : totalInsts,
@@ -197,6 +214,8 @@ function normalizeItem(raw: any, parent: any): ReceiptItem {
     remainingBalance: remainingBal,
     totalAccumulatedPaid: totalAccum || amountPaid,
     dueDate: raw.dueDate || raw.due_date || null,
+    paymentDate: raw.paymentDate || raw.payment_date || parent.receipt_date || parent.paymentDate || null,
+    paymentMethod: raw.paymentMethod || raw.payment_method || parent.payment_method || parent.paymentMethod || 'TRANSFERENCIA',
     isFreeDebt,
     notes: raw.notes || parent.notes || null,
   };
@@ -224,8 +243,8 @@ export default function ReceiptModal({
   // Normalizar campos para compatibilidad completa
   const code = r.receipt_code || r.paymentCode || 'REC-000000';
   const clientName = r.client_name || r.clientName || 'Cliente FINTECH';
-  const clientDoc = r.client_document || r.clientDocument || 'N/A';
-  const clientPhone = r.client_phone || r.clientPhone || '+57 300 123 4561';
+  const clientDoc = r.client_document || r.clientDocument || 'Sin C.C.';
+  const clientPhone = r.client_phone || r.clientPhone || '+57 300 000 0000';
   const payDate = r.receipt_date || r.paymentDate || new Date().toISOString();
   const totalAmount = Number(r.total_amount ?? r.amountPaid ?? 0);
   const payMethod = r.payment_method || r.paymentMethod || 'TRANSFERENCIA';
@@ -263,54 +282,72 @@ export default function ReceiptModal({
   const totalAccumulated =
     items.reduce((sum, it) => sum + (it.totalAccumulatedPaid || 0), 0) || totalAmount;
 
-  // Generador de texto para WhatsApp
+  // Generador de texto profesional para WhatsApp
   const generateWhatsAppMessage = () => {
     let msg = `*COMPROBANTE DE RECAUDO — FINTECH*\n`;
     msg += `-------------------------------------------\n`;
-    msg += `📄 *Recibo:* ${code}\n`;
+    msg += `📄 *N° Recibo:* ${code}\n`;
     msg += `👤 *Cliente:* ${clientName}\n`;
-    msg += `🪪 *Cédula:* ${clientDoc}\n`;
-    msg += `📅 *Fecha:* ${formatDate(payDate)}\n`;
-    msg += `💳 *Método:* ${payMethod}\n`;
+    msg += `🪪 *Documento:* ${clientDoc}\n`;
+    msg += `📱 *Teléfono:* ${clientPhone}\n`;
+    msg += `📅 *Fecha y Hora:* ${formatDate(payDate)}\n`;
+    msg += `💳 *Medio de Pago:* ${payMethod}\n`;
     msg += `-------------------------------------------\n`;
 
     if (isConsolidated) {
       msg += `📋 *DETALLE DE CRÉDITOS CONSOLIDADOS:*\n\n`;
       items.forEach((it, idx) => {
-        msg += `*${idx + 1}. Crédito:* ${it.loanCode}\n`;
+        msg += `*${idx + 1}. CRÉDITO ${it.loanCode}*\n`;
+        if (it.disbursementDate) msg += `   • Desembolso: ${formatDate(it.disbursementDate)}\n`;
+        if (it.capitalAmount) msg += `   • Capital prestado: ${formatCOP(it.capitalAmount)}\n`;
+        if (it.totalAmount) msg += `   • Total pactado: ${formatCOP(it.totalAmount)}\n`;
+
         if (it.isFreeDebt) {
-          msg += `   • Concepto: Abono libre a deuda congelada\n`;
+          msg += `   • Concepto: Abono libre a capital / deuda congelada\n`;
         } else {
-          msg += `   • Cuota pagada: #${it.installmentNumber || 'N/A'}${it.totalInstallments ? ` de ${it.totalInstallments}` : ''
-            }\n`;
+          msg += `   • Cuota pagada: #${it.installmentNumber || 'N/A'}${it.totalInstallments ? ` de ${it.totalInstallments}` : ''}\n`;
+          if (it.dueDate) msg += `   • Vencimiento cuota: ${formatDate(it.dueDate)}\n`;
           if (it.remainingInstallments !== null && it.remainingInstallments !== undefined) {
             msg += `   • Cuotas pendientes: ${it.remainingInstallments}\n`;
           }
         }
-        msg += `   • Valor pagado: ${formatCOP(it.amountPaid)}\n`;
-        msg += `   • Saldo restante de este crédito: ${formatCOP(it.remainingBalance)}\n\n`;
+        msg += `   • Valor recibido: ${formatCOP(it.amountPaid)}\n`;
+        if (it.totalAccumulatedPaid) msg += `   • Total acumulado abonado: ${formatCOP(it.totalAccumulatedPaid)}\n`;
+        msg += `   • Saldo restante de este crédito: ${formatCOP(it.remainingBalance)}\n`;
+        msg += `   • Estado: ${it.loanStatus || 'ACTIVO'}\n\n`;
       });
     } else {
       const it = items[0];
-      msg += `📌 *Crédito:* ${it.loanCode}\n`;
+      msg += `📌 *IDENTIFICACIÓN DEL CRÉDITO:*\n`;
+      msg += `   • Crédito: ${it.loanCode}\n`;
+      if (it.disbursementDate) msg += `   • Desembolso: ${formatDate(it.disbursementDate)}\n`;
+      if (it.capitalAmount) msg += `   • Capital prestado: ${formatCOP(it.capitalAmount)}\n`;
+      if (it.totalAmount) msg += `   • Total acordado: ${formatCOP(it.totalAmount)}\n`;
+      msg += `   • Estado: ${it.loanStatus || 'ACTIVO'}\n\n`;
+
+      msg += `💰 *DETALLE DEL PAGO:*\n`;
       if (it.isFreeDebt) {
         msg += `   • Concepto: Abono libre a capital / deuda congelada\n`;
       } else {
-        msg += `   • Cuota pagada: #${it.installmentNumber || 'N/A'}${it.totalInstallments ? ` de ${it.totalInstallments}` : ''
-          }\n`;
+        msg += `   • Cuota pagada: #${it.installmentNumber || 'N/A'}${it.totalInstallments ? ` de ${it.totalInstallments}` : ''}\n`;
+        if (it.dueDate) msg += `   • Vencimiento de cuota: ${formatDate(it.dueDate)}\n`;
         if (it.remainingInstallments !== null && it.remainingInstallments !== undefined) {
-          msg += `   • Cuotas pendientes: ${it.remainingInstallments}\n`;
+          msg += `   • Cuotas restantes: ${it.remainingInstallments}\n`;
         }
       }
+      msg += `   • Valor recibido: ${formatCOP(it.amountPaid)}\n`;
+      msg += `   • Medio: ${it.paymentMethod || payMethod}\n\n`;
+
+      msg += `📊 *ESTADO ACTUAL DE LA DEUDA:*\n`;
       msg += `   • Total acumulado abonado: ${formatCOP(it.totalAccumulatedPaid || totalAccumulated)}\n`;
-      msg += `   • Saldo restante de este crédito: ${formatCOP(it.remainingBalance)}\n`;
+      msg += `   • Saldo pendiente real: ${formatCOP(it.remainingBalance)}\n`;
     }
 
     msg += `-------------------------------------------\n`;
     msg += `💰 *TOTAL RECIBIDO:* ${formatCOP(totalAmount)}\n`;
     msg += `📉 *SALDO TOTAL PENDIENTE:* ${formatCOP(totalRemaining)}\n`;
     msg += `-------------------------------------------\n`;
-    msg += `_¡Muchas gracias por su pago y puntualidad!_\n`;
+    msg += `_¡Muchas gracias por su puntualidad y confianza!_\n`;
     msg += `*FINTECH* — Tu negocio, en control`;
 
     return msg;
@@ -345,147 +382,160 @@ export default function ReceiptModal({
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: [100, isConsolidated ? 210 : 170],
+        format: [105, isConsolidated ? 240 : 195],
       });
 
       // Fondo oscuro elegante
       doc.setFillColor(11, 11, 18);
-      doc.rect(0, 0, 100, isConsolidated ? 210 : 170, 'F');
+      doc.rect(0, 0, 105, isConsolidated ? 240 : 195, 'F');
 
       // Header
       doc.setTextColor(229, 9, 47); // Rojo
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(16);
-      doc.text('FINTECH', 50, 12, { align: 'center' });
+      doc.text('FINTECH', 52, 12, { align: 'center' });
 
       doc.setTextColor(167, 139, 250); // Lila
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      doc.text('TU NEGOCIO, EN CONTROL', 50, 17, { align: 'center' });
+      doc.text('TU NEGOCIO, EN CONTROL', 52, 17, { align: 'center' });
 
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text(isConsolidated ? 'RECIBO CONSOLIDADO DE PAGO' : 'COMPROBANTE OFICIAL DE RECAUDO', 50, 23, {
+      doc.text(isConsolidated ? 'RECIBO CONSOLIDADO DE PAGO' : 'COMPROBANTE OFICIAL DE RECAUDO', 52, 23, {
         align: 'center',
       });
 
       // Línea divisoria
       doc.setDrawColor(45, 37, 69);
       doc.setLineDashPattern([1, 1], 0);
-      doc.line(10, 26, 90, 26);
+      doc.line(8, 26, 97, 26);
 
-      // Datos del recibo
+      // Datos del cliente y recibo
       let y = 32;
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(160, 160, 175);
-      doc.text('N° de Recibo:', 10, y);
+      doc.text('N° de Recibo:', 8, y);
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
-      doc.text(code, 90, y, { align: 'right' });
+      doc.text(code, 97, y, { align: 'right' });
 
       y += 5;
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(160, 160, 175);
-      doc.text('Fecha y Hora:', 10, y);
+      doc.text('Fecha y Hora:', 8, y);
       doc.setTextColor(255, 255, 255);
-      doc.text(formatDate(payDate), 90, y, { align: 'right' });
+      doc.text(formatDate(payDate), 97, y, { align: 'right' });
 
       y += 5;
       doc.setTextColor(160, 160, 175);
-      doc.text('Cliente:', 10, y);
+      doc.text('Cliente:', 8, y);
       doc.setTextColor(255, 255, 255);
       doc.setFont('helvetica', 'bold');
-      doc.text(clientName, 90, y, { align: 'right' });
+      doc.text(clientName, 97, y, { align: 'right' });
 
       y += 5;
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(160, 160, 175);
-      doc.text('Documento / CC:', 10, y);
+      doc.text('Documento / CC:', 8, y);
       doc.setTextColor(255, 255, 255);
-      doc.text(clientDoc, 90, y, { align: 'right' });
+      doc.text(clientDoc, 97, y, { align: 'right' });
 
       y += 5;
       doc.setTextColor(160, 160, 175);
-      doc.text('Teléfono:', 10, y);
+      doc.text('Teléfono:', 8, y);
       doc.setTextColor(255, 255, 255);
-      doc.text(clientPhone, 90, y, { align: 'right' });
+      doc.text(clientPhone, 97, y, { align: 'right' });
 
       y += 5;
       doc.setTextColor(160, 160, 175);
-      doc.text('Método:', 10, y);
+      doc.text('Medio de Pago:', 8, y);
       doc.setTextColor(255, 255, 255);
-      doc.text(payMethod, 90, y, { align: 'right' });
+      doc.text(payMethod, 97, y, { align: 'right' });
 
       y += 4;
-      doc.line(10, y, 90, y);
+      doc.line(8, y, 97, y);
       y += 6;
 
       // Desglose de ítems
       doc.setFontSize(8);
       doc.setTextColor(167, 139, 250);
       doc.setFont('helvetica', 'bold');
-      doc.text('DESGLOSE DE CRÉDITOS:', 10, y);
+      doc.text(isConsolidated ? 'DETALLE DE CRÉDITOS CONSOLIDADOS:' : 'DETALLE DE LA OBLIGACIÓN:', 8, y);
       y += 5;
 
       items.forEach((it) => {
-        doc.setFillColor(22, 20, 35);
-        doc.roundedRect(10, y, 80, 16, 2, 2, 'F');
+        const blockH = isConsolidated ? 26 : 30;
+        doc.setFillColor(20, 18, 34);
+        doc.roundedRect(8, y, 89, blockH, 2, 2, 'F');
 
-        doc.setFontSize(7.5);
+        doc.setFontSize(8);
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
-        doc.text(it.loanCode, 13, y + 4.5);
+        doc.text(`Crédito: ${it.loanCode}`, 11, y + 4.5);
 
+        doc.setTextColor(229, 9, 47);
+        doc.text(formatCOP(it.amountPaid), 94, y + 4.5, { align: 'right' });
+
+        doc.setFontSize(7);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(160, 160, 175);
+
+        if (it.disbursementDate && it.capitalAmount) {
+          doc.text(`Desembolso: ${formatDate(it.disbursementDate)} | Cap: ${formatCOP(it.capitalAmount)}`, 11, y + 8.5);
+        }
+
         const concept = it.isFreeDebt
-          ? 'Abono libre a deuda'
-          : `Cuota #${it.installmentNumber || 'N/A'}${it.totalInstallments ? ` de ${it.totalInstallments}` : ''} (${it.remainingInstallments ?? 0
-          } rest.)`;
-        doc.text(concept, 13, y + 9);
+          ? 'Abono libre a capital / deuda congelada'
+          : `Cuota #${it.installmentNumber || 'N/A'}${it.totalInstallments ? ` de ${it.totalInstallments}` : ''}${it.dueDate ? ` (Vence: ${formatDate(it.dueDate)})` : ''}`;
+        doc.text(concept, 11, y + 12.5);
+
+        if (it.remainingInstallments !== null) {
+          doc.text(`Cuotas restantes: ${it.remainingInstallments} pendientes`, 11, y + 16.5);
+        }
+
+        if (it.totalAccumulatedPaid) {
+          doc.text(`Total abonado: ${formatCOP(it.totalAccumulatedPaid)}`, 11, y + 20.5);
+        }
 
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(229, 9, 47);
-        doc.text(formatCOP(it.amountPaid), 87, y + 4.5, { align: 'right' });
+        doc.setTextColor(167, 139, 250);
+        doc.text(`Saldo restante: ${formatCOP(it.remainingBalance)}`, 94, y + (isConsolidated ? 22 : 25), { align: 'right' });
 
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(160, 160, 175);
-        doc.text(`Saldo: ${formatCOP(it.remainingBalance)}`, 87, y + 9, { align: 'right' });
-
-        y += 19;
+        y += blockH + 3;
       });
 
       // Totales
-      y += 2;
-      doc.line(10, y, 90, y);
+      doc.setLineDashPattern([1, 1], 0);
+      doc.line(8, y, 97, y);
       y += 6;
 
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(255, 255, 255);
-      doc.text('TOTAL RECIBIDO:', 10, y);
+      doc.text('TOTAL RECIBIDO:', 8, y);
       doc.setTextColor(229, 9, 47);
       doc.setFontSize(11);
-      doc.text(formatCOP(totalAmount), 90, y, { align: 'right' });
+      doc.text(formatCOP(totalAmount), 97, y, { align: 'right' });
 
       y += 6;
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(160, 160, 175);
-      doc.text('Saldo Total Pendiente:', 10, y);
+      doc.text('Saldo Total Pendiente:', 8, y);
       doc.setTextColor(167, 139, 250);
       doc.setFont('helvetica', 'bold');
-      doc.text(formatCOP(totalRemaining), 90, y, { align: 'right' });
+      doc.text(formatCOP(totalRemaining), 97, y, { align: 'right' });
 
-      y += 10;
-      doc.setFontSize(7);
+      y += 9;
+      doc.setFontSize(6.5);
       doc.setFont('helvetica', 'italic');
       doc.setTextColor(120, 120, 140);
-      doc.text('Comprobante oficial expedido por FINTECH', 50, y, { align: 'center' });
+      doc.text('Comprobante oficial expedido por FINTECH', 52, y, { align: 'center' });
       y += 4;
-      doc.text('¡Gracias por su puntualidad y confianza!', 50, y, { align: 'center' });
+      doc.text('¡Gracias por su puntualidad y confianza!', 52, y, { align: 'center' });
 
       doc.save(`RECIBO_${code}.pdf`);
     } catch (err) {
@@ -503,7 +553,6 @@ export default function ReceiptModal({
     const phoneClean = (clientPhone || '').replace(/[^\d]/g, '');
 
     try {
-      // Intentar Web Share con archivo PNG si el dispositivo lo permite
       if (ticketRef.current && navigator.canShare) {
         try {
           const blob = await toBlob(ticketRef.current, {
@@ -528,7 +577,6 @@ export default function ReceiptModal({
         }
       }
 
-      // Redirección directa a WhatsApp
       let waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
       if (phoneClean && phoneClean.length >= 10) {
         waUrl = `https://wa.me/${phoneClean}?text=${encodeURIComponent(msg)}`;
@@ -589,7 +637,7 @@ export default function ReceiptModal({
 
         {/* Scrollable Receipt Area */}
         <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5 touch-scroll">
-          {/* TICKET VISUAL - RENDERIZABLE A PNG */}
+          {/* TICKET VISUAL PROFESIONAL - RENDERIZABLE A PNG */}
           <div
             ref={ticketRef}
             id="printable-receipt"
@@ -618,110 +666,148 @@ export default function ReceiptModal({
               </div>
             </div>
 
-            {/* Datos del Cliente y Fecha */}
+            {/* 1. INFORMACIÓN DEL CLIENTE Y METADATOS */}
             <div className="bg-[#141222] p-3.5 rounded-2xl border border-[#2D2545]/60 space-y-2 text-xs">
+              <div className="flex justify-between items-center text-[10px] text-[#A78BFA] font-bold uppercase tracking-wider border-b border-[#231E33] pb-1.5">
+                <span className="flex items-center gap-1">
+                  <User className="w-3.5 h-3.5" /> Información del Cliente
+                </span>
+                <span className="text-neutral-400 font-normal">Titular</span>
+              </div>
               <div className="flex justify-between items-center">
+                <span className="text-neutral-400">Nombre Completo:</span>
+                <span className="font-bold text-white text-right">{clientName}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-400">Documento / Cédula:</span>
+                <span className="font-mono text-neutral-300">{clientDoc}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-neutral-400">Teléfono / WhatsApp:</span>
+                <span className="font-mono text-neutral-300">{clientPhone}</span>
+              </div>
+              <div className="flex justify-between items-center pt-1 border-t border-[#231E33]">
                 <span className="text-neutral-400 flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-[#8B5CF6]" /> Fecha & Hora:
+                  <Clock className="w-3 h-3 text-[#8B5CF6]" /> Fecha de Pago:
                 </span>
                 <span className="font-semibold text-neutral-200">{formatDate(payDate)}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-neutral-400 flex items-center gap-1">
-                  <User className="w-3.5 h-3.5 text-[#8B5CF6]" /> Cliente:
+                  <CreditCard className="w-3 h-3 text-[#8B5CF6]" /> Medio Recibido:
                 </span>
-                <span className="font-bold text-white text-right">{clientName}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-neutral-400 flex items-center gap-1">
-                  <FileText className="w-3.5 h-3.5 text-[#8B5CF6]" /> Documento / CC:
-                </span>
-                <span className="font-mono text-neutral-300">{clientDoc}</span>
-              </div>
-              {clientPhone && (
-                <div className="flex justify-between items-center">
-                  <span className="text-neutral-400 flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-[#8B5CF6]" /> Teléfono:
-                  </span>
-                  <span className="font-mono text-neutral-300">{clientPhone}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-center pt-1 border-t border-[#231E33]">
-                <span className="text-neutral-400">Medio de Pago:</span>
                 <span className="font-semibold text-[#A78BFA]">{payMethod}</span>
               </div>
             </div>
 
-            {/* Desglose de Obligaciones / Cuotas Pagadas */}
+            {/* 2. OBLIGACIONES Y CRÉDITOS IDENTIFICADOS */}
             <div className="space-y-2.5">
               <div className="flex items-center justify-between text-xs px-1">
                 <span className="font-bold text-[#A78BFA] uppercase tracking-wider text-[11px] flex items-center gap-1">
                   <FileCheck className="w-3.5 h-3.5 text-[#E5092F]" />
-                  {isConsolidated ? `Créditos Consolidados (${items.length})` : 'Detalle de la Obligación'}
+                  {isConsolidated ? `Créditos Consolidados (${items.length})` : 'Identificación de la Obligación'}
                 </span>
-                <span className="text-[10px] text-neutral-400">Desglose Individual</span>
+                <span className="text-[10px] text-neutral-400">Detalle Individual</span>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {items.map((it, idx) => (
                   <div
                     key={idx}
-                    className="p-3 rounded-2xl bg-[#141222] border border-[#2D2545] space-y-1.5 text-xs relative overflow-hidden"
+                    className="p-3.5 rounded-2xl bg-[#141222] border border-[#2D2545] space-y-2 text-xs relative overflow-hidden"
                   >
-                    <div className="flex justify-between items-center">
-                      <span className="font-extrabold text-white text-[13px] tracking-wide flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-[#E5092F]" />
-                        {it.loanCode}
-                      </span>
+                    {/* Header del crédito */}
+                    <div className="flex justify-between items-center border-b border-[#231E33] pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#E5092F]" />
+                        <span className="font-extrabold text-white text-sm tracking-wide">
+                          {it.loanCode}
+                        </span>
+                        <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                          {it.loanStatus || 'ACTIVO'}
+                        </span>
+                      </div>
                       <span className="font-black text-white text-sm">
                         {formatCOP(it.amountPaid)}
                       </span>
                     </div>
 
-                    <div className="flex justify-between text-[11px] text-neutral-400">
-                      <span>Concepto:</span>
-                      <span className="font-medium text-neutral-200">
-                        {it.isFreeDebt
-                          ? 'Abono libre a deuda congelada'
-                          : `Cuota #${it.installmentNumber ?? 'N/A'}${
-                              it.totalInstallments ? ` de ${it.totalInstallments}` : ''
-                            }`}
+                    {/* IDENTIFICACIÓN DEL CRÉDITO */}
+                    <div className="bg-[#181528] p-2.5 rounded-xl border border-[#3B3058]/50 space-y-1 text-[11px]">
+                      <span className="text-[10px] font-bold text-[#A78BFA] block uppercase tracking-wide">
+                        Condiciones del Crédito
                       </span>
+                      {it.disbursementDate && (
+                        <div className="flex justify-between text-neutral-400">
+                          <span>Fecha Desembolso:</span>
+                          <span className="text-neutral-200">{formatDate(it.disbursementDate)}</span>
+                        </div>
+                      )}
+                      {it.capitalAmount ? (
+                        <div className="flex justify-between text-neutral-400">
+                          <span>Capital Prestado:</span>
+                          <span className="text-neutral-200">{formatCOP(it.capitalAmount)}</span>
+                        </div>
+                      ) : null}
+                      {it.totalAmount ? (
+                        <div className="flex justify-between text-neutral-400">
+                          <span>Valor Total Acordado:</span>
+                          <span className="font-semibold text-white">{formatCOP(it.totalAmount)}</span>
+                        </div>
+                      ) : null}
                     </div>
 
-                    {!it.isFreeDebt && it.remainingInstallments !== null && (
-                      <div className="flex justify-between text-[11px] text-neutral-400">
-                        <span>Cuotas restantes:</span>
-                        <span className="font-bold text-[#A78BFA]">
-                          {it.remainingInstallments} {it.remainingInstallments === 1 ? 'cuota' : 'cuotas'}
+                    {/* DETALLE DEL PAGO DE CUOTA */}
+                    <div className="space-y-1 text-[11px] pt-1">
+                      <div className="flex justify-between text-neutral-400">
+                        <span>Concepto de Pago:</span>
+                        <span className="font-bold text-white">
+                          {it.isFreeDebt
+                            ? 'Abono libre a capital / deuda congelada'
+                            : `Cuota #${it.installmentNumber ?? 'N/A'}${
+                                it.totalInstallments ? ` de ${it.totalInstallments}` : ''
+                              }`}
                         </span>
                       </div>
-                    )}
 
-                    {it.dueDate && (
-                      <div className="flex justify-between text-[11px] text-neutral-400">
-                        <span>Fecha Vencimiento:</span>
-                        <span className="text-neutral-300">{formatDate(it.dueDate)}</span>
-                      </div>
-                    )}
+                      {it.dueDate && (
+                        <div className="flex justify-between text-neutral-400">
+                          <span>Vencimiento Cuota:</span>
+                          <span className="text-neutral-300">{formatDate(it.dueDate)}</span>
+                        </div>
+                      )}
 
-                    <div className="pt-1.5 border-t border-[#231E33] flex justify-between text-[11px]">
-                      <span className="text-neutral-400">Saldo restante crédito:</span>
-                      <span className="font-bold text-neutral-200">{formatCOP(it.remainingBalance)}</span>
+                      {!it.isFreeDebt && it.remainingInstallments !== null && (
+                        <div className="flex justify-between text-neutral-400">
+                          <span>Cuotas Pendientes:</span>
+                          <span className="font-bold text-[#A78BFA]">
+                            {it.remainingInstallments} {it.remainingInstallments === 1 ? 'cuota' : 'cuotas'}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
-                    {it.totalAccumulatedPaid && it.totalAccumulatedPaid > 0 && (
-                      <div className="flex justify-between text-[10px] text-neutral-400">
-                        <span>Total abonado acumulado:</span>
-                        <span className="text-neutral-300">{formatCOP(it.totalAccumulatedPaid)}</span>
+                    {/* ESTADO ACTUAL DE LA DEUDA */}
+                    <div className="pt-2 border-t border-[#231E33] space-y-1 text-[11px]">
+                      {it.totalAccumulatedPaid && it.totalAccumulatedPaid > 0 && (
+                        <div className="flex justify-between text-neutral-400">
+                          <span>Total Abonado Acumulado:</span>
+                          <span className="font-bold text-emerald-400">{formatCOP(it.totalAccumulatedPaid)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center pt-0.5">
+                        <span className="text-neutral-300 font-semibold">Saldo Restante Crédito:</span>
+                        <span className="font-black text-white text-xs bg-[#241A35] px-2 py-0.5 rounded-lg border border-[#8B5CF6]/30">
+                          {formatCOP(it.remainingBalance)}
+                        </span>
                       </div>
-                    )}
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Gran Total y Saldo Global */}
+            {/* GRAN TOTAL Y SALDO GLOBAL */}
             <div className="pt-2 border-t border-dashed border-[#2D2545] space-y-2">
               <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#1E1220] via-[#1F101A] to-[#141222] border border-[#E5092F]/40 flex justify-between items-center shadow-lg">
                 <div>
@@ -766,8 +852,9 @@ export default function ReceiptModal({
           <div className="mt-4 p-3 rounded-2xl bg-[#12111E] border border-[#2D2545] flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <div
-                className={`w-7 h-7 rounded-xl flex items-center justify-center ${whatsappSent ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-neutral-800 text-neutral-400'
-                  }`}
+                className={`w-7 h-7 rounded-xl flex items-center justify-center ${
+                  whatsappSent ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-neutral-800 text-neutral-400'
+                }`}
               >
                 <CheckCircle2 className="w-4 h-4" />
               </div>
@@ -785,10 +872,11 @@ export default function ReceiptModal({
             <button
               onClick={handleConfirmSent}
               disabled={updatingSent}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${whatsappSent
-                ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950'
-                }`}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                whatsappSent
+                  ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950'
+              }`}
             >
               {updatingSent ? 'Guardando...' : whatsappSent ? 'Desmarcar' : 'Confirmar Envío'}
             </button>

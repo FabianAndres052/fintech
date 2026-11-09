@@ -18,6 +18,10 @@ export async function GET(req: NextRequest) {
       SELECT 
         p.*,
         l.loan_code,
+        l.capital_amount,
+        l.total_amount,
+        l.disbursement_date,
+        l.status as loan_status,
         l.installments_count,
         l.balance_remaining as loan_balance,
         CONCAT(c.first_name, ' ', c.last_name) as client_name,
@@ -290,6 +294,10 @@ export async function POST(req: NextRequest) {
       const receiptItem = {
         loanId: loan.id,
         loanCode: loan.loan_code,
+        disbursementDate: loan.disbursement_date ? new Date(loan.disbursement_date).toISOString().slice(0, 10) : null,
+        capitalAmount: Number(loan.capital_amount),
+        totalAmount: Number(loan.total_amount),
+        loanStatus: newLoanStatus,
         installmentId: targetInstallmentId,
         installmentNumber: instNum,
         totalInstallments: totalInsts,
@@ -300,6 +308,8 @@ export async function POST(req: NextRequest) {
         remainingBalance: newLoanBalance,
         totalAccumulatedPaid: newCapitalCollected + newInterestCollected,
         dueDate: instDueDate,
+        paymentDate: pDate.toISOString(),
+        paymentMethod: payment_method,
         isFreeDebt,
         notes: notes ? notes.trim() : null,
       };
