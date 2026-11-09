@@ -16,7 +16,7 @@ async function verifyTokenCryptographically(token: string | undefined): Promise<
 
     // 1. Decodificar payload y verificar expiración
     const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
-    if (!payload || !payload.id || !payload.exp) return null;
+    if (!payload || (!payload.id && !payload.clientId) || !payload.exp) return null;
     if (payload.exp * 1000 < Date.now()) return null;
 
     // 2. Verificar firma HMAC SHA-256
@@ -40,56 +40,108 @@ async function verifyTokenCryptographically(token: string | undefined): Promise<
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const authHeader = request.headers.get('Authorization');
-  const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : undefined;
-  const token = request.cookies.get('admin_token')?.value || bearerToken;
-  
-  // Verificación criptográfica estricta
-  const payload = await verifyTokenCryptographically(token);
-  const hasValidToken = !!payload;
 
-  const isLoginPage = pathname === '/login';
-  const isPublicApi =
-    pathname.startsWith('/api/auth/login') ||
-    pathname.startsWith('/api/auth/logout');
-
-  // Si el usuario ya está autenticado con token criptográficamente válido e intenta acceder a /login, redirigir al dashboard
-  if (isLoginPage && hasValidToken) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
-  // Rutas públicas y recursos estáticos
+  // 1. Recursos estáticos públicos siempre permitidos
   if (
-    isLoginPage ||
-    isPublicApi ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/icons') ||
     pathname === '/manifest.json' ||
     pathname === '/sw.js' ||
     pathname === '/favicon.ico' ||
     pathname.endsWith('.png') ||
+    pathname.endsWith('.jpg') ||
+    pathname.endsWith('.jpeg') ||
     pathname.endsWith('.svg') ||
     pathname.endsWith('.ico')
   ) {
     return NextResponse.next();
   }
 
-  // Si no tiene token criptográficamente válido y está accediendo a una página o API protegida
-  if (!hasValidToken) {
+  // 2. Webhooks externos (Bold) siempre permitidos
+  if (pathname.startsWith('/api/webhooks')) {
+    return NextResponse.next();
+  }
+
+  // 3. Flujo del Portal de Clientes (/portal y /api/portal)
+  const isClientPortalRoute = pathname.startsWith('/portal') || pathname.startsWith('/api/portal');
+  if (isClientPortalRoute) {
+    const isClientLoginPage = pathname === '/portal/login';
+    const isClientPublicApi =
+      pathname === '/api/portal/auth/login' ||
+      pathname === '/api/portal/auth/logout';
+
+    if (isClientLoginPage || isClientPublicApi) {
+      if (isClientLoginPage) {
+        const clientToken = request.cookies.get('client_token')?.value;
+        const clientPayload = await verifyTokenCryptographically(clientToken);
+        if (clientPayload && clientPayload.role === 'CLIENT') {
+          return NextResponse.redirect(new URL('/portal', request.url));
+        }
+      }
+      return NextResponse.next();
+    }
+
+    // Rutas protegidas del portal de clientes
+    const clientToken = request.cookies.get('client_token')?.value;
+    const clientPayload = await verifyTokenCryptographically(clientToken);
+    const hasValidClientToken = !!(clientPayload && clientPayload.role === 'CLIENT');
+
+    if (!hasValidClientToken) {
+      if (pathname.startsWith('/api/')) {
+        const resp = NextResponse.json({ error: 'No autorizado: Inicie sesión en el portal.' }, { status: 401 });
+        resp.cookies.delete('client_token');
+        return resp;
+      }
+      // Redirigir a /portal/login si intenta acceder a /portal sin autenticarse
+      const clientLoginUrl = new URL('/portal/login', request.url);
+      const resp = NextResponse.redirect(clientLoginUrl);
+      resp.cookies.delete('client_token');
+      return resp;
+    }
+
+    const response = NextResponse.next();
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    return response;
+  }
+
+  // 4. Flujo del Administrador y Super Administrador
+  const authHeader = request.headers.get('Authorization');
+  const bearerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : undefined;
+  const adminToken = request.cookies.get('admin_token')?.value || bearerToken;
+
+  const adminPayload = await verifyTokenCryptographically(adminToken);
+  const hasValidAdminToken = !!(adminPayload && (adminPayload.role === 'ADMIN' || adminPayload.role === 'SUPERADMIN'));
+
+  const isLoginPage = pathname === '/login';
+  const isPublicAdminApi =
+    pathname.startsWith('/api/auth/login') ||
+    pathname.startsWith('/api/auth/logout');
+
+  // Si ya tiene sesión administrativa válida e intenta acceder a /login, redirigir al dashboard
+  if (isLoginPage && hasValidAdminToken) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  if (isLoginPage || isPublicAdminApi) {
+    return NextResponse.next();
+  }
+
+  // Si no tiene token administrativo válido
+  if (!hasValidAdminToken) {
     if (pathname.startsWith('/api/')) {
-      const resp = NextResponse.json({ error: 'No autorizado: Token inexistente o inválido.' }, { status: 401 });
+      const resp = NextResponse.json({ error: 'No autorizado: Token administrativo inexistente o inválido.' }, { status: 401 });
       resp.cookies.delete('admin_token');
       return resp;
     }
     const loginUrl = new URL('/login', request.url);
-    const resp = NextResponse.rewrite(loginUrl);
+    const resp = NextResponse.redirect(loginUrl);
     resp.cookies.delete('admin_token');
     return resp;
   }
 
   // =========================================================================
   // BLINDAJE DE SEGURIDAD EXCLUSIVO: SUPER ADMINISTRADOR Y AUDITORÍA
-  // Solo accesible si payload.role === 'SUPERADMIN'
+  // Solo accesible si adminPayload.role === 'SUPERADMIN'
   // =========================================================================
   const isSuperadminRoute =
     pathname.startsWith('/superadmin') ||
@@ -97,18 +149,17 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/api/superadmin') ||
     pathname.startsWith('/api/audit');
 
-  if (isSuperadminRoute && payload?.role !== 'SUPERADMIN') {
+  if (isSuperadminRoute && adminPayload?.role !== 'SUPERADMIN') {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json(
         { error: 'Acceso restringido: Se requieren privilegios exclusivos de Super Administrador.' },
         { status: 403 }
       );
     }
-    // Si intenta ingresar por URL en el navegador, redirigir al Dashboard principal
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  // Encabezados anti-caché en todas las rutas protegidas para evitar retroceso con botón Atrás del navegador
+  // Encabezados anti-caché en todas las rutas protegidas
   const response = NextResponse.next();
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
   response.headers.set('Pragma', 'no-cache');

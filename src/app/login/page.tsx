@@ -337,17 +337,18 @@ export default function LoginPage() {
                 </>
               )}
             </button>
-
-            <div className="pt-2 text-center">
-              <Link
-                href="/portal/login"
-                className="inline-flex items-center gap-1.5 text-xs text-[#A78BFA] hover:text-white font-semibold transition-colors"
-              >
-                <span>¿Eres cliente de FINTECH?</span>
-                <span className="underline font-bold">Ingresa a tu Portal de Clientes aquí →</span>
-              </Link>
-            </div>
           </form>
+
+          {/* Acceso a Portal de Clientes */}
+          <div className="mt-5 pt-4 border-t border-[#221D33] text-center">
+            <Link
+              href="/portal/login"
+              className="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-2xl bg-[#1A162B] hover:bg-[#251F3D] border border-[#3E3060] text-xs font-bold text-[#C4B5FD] hover:text-white transition-all shadow-md active:scale-[0.98]"
+            >
+              <span>👤 ¿Eres cliente de FINTECH?</span>
+              <span className="text-white underline">Ingresa a tu Portal de Clientes aquí →</span>
+            </Link>
+          </div>
         </div>
 
         {/* Autoría Oficial: Fabián Andrés Martínez Valderrama */}

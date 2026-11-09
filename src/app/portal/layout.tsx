@@ -24,7 +24,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // If on login page, render children directly without sidebar
-  const isLoginPage = pathname === '/portal/login';
+  const isLoginPage = pathname === '/portal/login' || pathname?.startsWith('/portal/login');
 
   useEffect(() => {
     if (isLoginPage) {
