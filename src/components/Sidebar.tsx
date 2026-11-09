@@ -19,6 +19,7 @@ import {
   LogOut,
   ChevronRight,
   TrendingUp,
+  ClipboardList,
 } from 'lucide-react';
 import FintechLogo from './FintechLogo';
 
@@ -94,6 +95,7 @@ export default function Sidebar({ adminName = 'Ana Posada', adminEmail = 'artuli
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Clientes', href: '/clientes', icon: Users },
     { name: 'Préstamos', href: '/prestamos', icon: CreditCard },
+    { name: 'Solicitudes', href: '/solicitudes', icon: ClipboardList },
     { name: 'Cuotas & Cobros', href: '/cuotas', icon: CalendarDays },
     { name: 'Pagos & Recaudos', href: '/pagos', icon: Receipt },
     { name: 'Recibos & Tickets', href: '/recibos', icon: FileCheck },

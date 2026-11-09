@@ -25,6 +25,7 @@ import {
   ChevronRight,
   Filter,
   Wallet,
+  KeyRound,
 } from 'lucide-react';
 import { Client } from '@/lib/types';
 import { formatCOP, formatDate, getLoanLabel } from '@/lib/calculations';
@@ -56,6 +57,56 @@ export default function ClientsPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+
+  // Modal de Gestión de Acceso al Portal
+  const [portalModalClient, setPortalModalClient] = useState<Client | null>(null);
+  const [portalPassword, setPortalPassword] = useState('Fintech2026*');
+  const [portalSaving, setPortalSaving] = useState(false);
+  const [portalFeedback, setPortalFeedback] = useState<string | null>(null);
+
+  const handleTogglePortalAccess = async () => {
+    if (!portalModalClient) return;
+    setPortalSaving(true);
+    setPortalFeedback(null);
+    try {
+      const res = await fetch(`/api/clients/${portalModalClient.id}/portal-access`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'TOGGLE_ACCESS' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al cambiar acceso');
+      setPortalModalClient({ ...portalModalClient, portal_access: data.portal_access });
+      setPortalFeedback(data.message);
+    } catch (err: any) {
+      setPortalFeedback(err.message);
+    } finally {
+      setPortalSaving(false);
+    }
+  };
+
+  const handleSetPortalPassword = async () => {
+    if (!portalModalClient) return;
+    setPortalSaving(true);
+    setPortalFeedback(null);
+    try {
+      const res = await fetch(`/api/clients/${portalModalClient.id}/portal-access`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'SET_PASSWORD', password: portalPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al asignar contraseña');
+      setPortalFeedback('Contraseña actualizada exitosamente.');
+      if (data.whatsappMessage) {
+        window.open(`https://wa.me/${(portalModalClient.phone || '').replace(/\D/g, '')}?text=${data.whatsappMessage}`, '_blank');
+      }
+    } catch (err: any) {
+      setPortalFeedback(err.message);
+    } finally {
+      setPortalSaving(false);
+    }
+  };
 
   const handleOpenReceiptTicket = async (p: any) => {
     try {
@@ -391,6 +442,19 @@ export default function ClientsPage() {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPortalModalClient(c);
+                          setPortalPassword('Fintech2026*');
+                          setPortalFeedback(null);
+                        }}
+                        className="p-2 rounded-xl bg-[#1C1A29] hover:bg-[#2A2640] border border-[#3A3258] text-emerald-400 hover:text-white transition-all cursor-pointer shadow-sm active:scale-95"
+                        title="Gestionar acceso al Portal de Clientes"
+                      >
+                        <KeyRound className="w-4 h-4" />
+                      </button>
                       <button
                         type="button"
                         onClick={(e) => {
@@ -847,6 +911,96 @@ export default function ClientsPage() {
         }}
         receipt={selectedReceipt}
       />
+
+      {/* MODAL GESTION ACCESO PORTAL CLIENTES */}
+      {portalModalClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-[#13111E] border border-[#2D2545] rounded-3xl p-6 shadow-2xl space-y-5 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Portal de Clientes</h3>
+                  <p className="text-xs text-neutral-400">
+                    {portalModalClient.first_name} {portalModalClient.last_name || ''}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPortalModalClient(null)}
+                className="text-neutral-400 hover:text-white font-bold"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {portalFeedback && (
+              <div className="p-3 rounded-xl bg-purple-950/60 border border-purple-800 text-purple-200 text-xs">
+                {portalFeedback}
+              </div>
+            )}
+
+            {/* Estado del acceso */}
+            <div className="p-4 rounded-2xl bg-[#181527] border border-[#26213A] flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-white block">Estado del Acceso</span>
+                <span className="text-[11px] text-neutral-400">
+                  {portalModalClient.portal_access === 1 ? 'Habilitado para ingresar' : 'Deshabilitado'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleTogglePortalAccess}
+                disabled={portalSaving}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  portalModalClient.portal_access === 1
+                    ? 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                    : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
+                }`}
+              >
+                {portalModalClient.portal_access === 1 ? 'Desactivar Acceso' : 'Activar Acceso'}
+              </button>
+            </div>
+
+            {/* Asignar Contraseña */}
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-neutral-300">
+                Nueva Contraseña / Restablecer
+              </label>
+              <input
+                type="text"
+                value={portalPassword}
+                onChange={(e) => setPortalPassword(e.target.value)}
+                className="w-full bg-[#181527] border border-[#26213A] rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#8B5CF6]"
+              />
+              <p className="text-[10px] text-neutral-400">
+                Al guardar, se abrirá WhatsApp con el mensaje de bienvenida y credenciales listo para enviar al cliente.
+              </p>
+            </div>
+
+            <div className="pt-2 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setPortalModalClient(null)}
+                className="flex-1 py-2.5 rounded-xl border border-neutral-700 text-neutral-300 text-xs font-bold hover:bg-neutral-800"
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                onClick={handleSetPortalPassword}
+                disabled={portalSaving || !portalPassword}
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#7C3AED] hover:from-[#9D76F8] hover:to-[#8B5CF6] text-white text-xs font-extrabold shadow-md shadow-purple-950/60 disabled:opacity-50"
+              >
+                {portalSaving ? 'Guardando...' : 'Guardar y Enviar por WhatsApp'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

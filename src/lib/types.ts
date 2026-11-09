@@ -36,6 +36,12 @@ export interface Client {
   monthly_income?: number;
   notes?: string | null;
   status: ClientStatus;
+  portal_access?: number;
+  last_login?: string | null;
+  payout_bank?: string | null;
+  payout_key_type?: string | null;
+  payout_key_value?: string | null;
+  avatar_url?: string | null;
   created_at: string;
   updated_at: string;
   // Computed / aggregated
@@ -178,4 +184,89 @@ export interface DashboardStats {
   recent_movements: FinancialMovement[];
   upcoming_installments: (Installment & { client_name: string; client_phone: string; loan_code: string })[];
   overdue_installments: (Installment & { client_name: string; client_phone: string; loan_code: string })[];
+}
+
+export type LoanApplicationStatus =
+  | 'EN_REVISION'
+  | 'APROBADA'
+  | 'RECHAZADA'
+  | 'CONDICIONES_ACEPTADAS'
+  | 'DESEMBOLSADO'
+  | 'CANCELADO';
+
+export interface LoanApplication {
+  id: number;
+  application_code: string;
+  client_id: number;
+  client_name?: string;
+  client_phone?: string;
+  client_document?: string;
+  requested_amount: number;
+  requested_installments: number;
+  requested_periodicity: Periodicity;
+  reason?: string | null;
+  status: LoanApplicationStatus;
+  approved_capital?: number | null;
+  approved_interest_rate?: number | null;
+  approved_interest_amount?: number | null;
+  approved_total_amount?: number | null;
+  approved_installments?: number | null;
+  approved_periodicity?: string | null;
+  approved_payment_per_installment?: number | null;
+  rejection_reason?: string | null;
+  reviewed_by?: number | null;
+  reviewed_at?: string | null;
+  client_accepted_at?: string | null;
+  disbursement_method?: 'TRANSFERENCIA' | 'EFECTIVO' | null;
+  disbursement_bank?: string | null;
+  disbursement_key_type?: string | null;
+  disbursement_key_value?: string | null;
+  disbursement_reference?: string | null;
+  disbursement_notes?: string | null;
+  disbursed_by?: number | null;
+  disbursed_at?: string | null;
+  loan_id?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApplicationMessage {
+  id: number;
+  application_id?: number | null;
+  client_id: number;
+  sender_type: 'CLIENT' | 'ADMIN';
+  sender_id: number;
+  sender_name: string;
+  message: string;
+  attachment_url?: string | null;
+  is_read: number;
+  created_at: string;
+}
+
+export interface PortalNotification {
+  id: number;
+  client_id: number;
+  title: string;
+  message: string;
+  type: 'PAYMENT' | 'DUE_DATE' | 'LOAN_STATUS' | 'DISBURSEMENT' | 'MESSAGE' | 'SYSTEM';
+  reference_id?: string | null;
+  reference_type?: string | null;
+  is_read: number;
+  created_at: string;
+}
+
+export interface BoldPayment {
+  id: number;
+  order_id: string;
+  client_id: number;
+  loan_id: number;
+  installment_id?: number | null;
+  amount: number;
+  payment_type: 'CUOTA' | 'ABONO';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'FAILED';
+  bold_tx_id?: string | null;
+  payment_method_type?: string | null;
+  payload_json?: any;
+  created_at: string;
+  updated_at: string;
 }

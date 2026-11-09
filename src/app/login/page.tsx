@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Lock,
   User,
@@ -336,6 +337,16 @@ export default function LoginPage() {
                 </>
               )}
             </button>
+
+            <div className="pt-2 text-center">
+              <Link
+                href="/portal/login"
+                className="inline-flex items-center gap-1.5 text-xs text-[#A78BFA] hover:text-white font-semibold transition-colors"
+              >
+                <span>¿Eres cliente de FINTECH?</span>
+                <span className="underline font-bold">Ingresa a tu Portal de Clientes aquí →</span>
+              </Link>
+            </div>
           </form>
         </div>
 
