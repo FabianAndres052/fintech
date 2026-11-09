@@ -52,3 +52,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Error al obtener solicitudes' }, { status: 500 });
   }
 }
+

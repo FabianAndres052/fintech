@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       senderName = admin!.name || 'Asesor FINTECH';
     }
 
-    const [result]: any = await query(
+    const result: any = await query(
       `INSERT INTO application_messages 
        (application_id, client_id, sender_type, sender_id, sender_name, message, attachment_url, is_read)
        VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
@@ -140,3 +140,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Error al enviar el mensaje.' }, { status: 500 });
   }
 }
+

@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     const codeNum = Math.floor(1000 + Math.random() * 9000);
     const appCode = `SOL-${Date.now().toString().slice(-4)}${codeNum}`;
 
-    const [result]: any = await query(
+    const result: any = await query(
       `INSERT INTO loan_applications 
        (application_code, client_id, requested_amount, requested_installments, requested_periodicity, reason, status)
        VALUES (?, ?, ?, ?, ?, ?, 'EN_REVISION')`,
@@ -105,3 +105,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

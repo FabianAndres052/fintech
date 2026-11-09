@@ -15,7 +15,7 @@ export async function POST(
     const { id } = await params;
     const clientId = Number(id);
 
-    const [clients] = await query<any[]>('SELECT * FROM clients WHERE id = ? LIMIT 1', [clientId]);
+    const clients = await query<any[]>('SELECT * FROM clients WHERE id = ? LIMIT 1', [clientId]);
     if (!clients || clients.length === 0) {
       return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 });
     }
@@ -79,3 +79,4 @@ export async function POST(
     return NextResponse.json({ error: 'Error al gestionar acceso al portal' }, { status: 500 });
   }
 }
+

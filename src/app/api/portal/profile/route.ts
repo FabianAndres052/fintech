@@ -54,8 +54,8 @@ export async function PUT(req: NextRequest) {
         );
       }
 
-      const [existingClient] = await query<any[]>('SELECT password_hash FROM clients WHERE id = ?', [client.id]);
-      const isMatch = await comparePassword(current_password, existingClient[0]?.password_hash || '');
+      const existingClients = await query<any[]>('SELECT password_hash FROM clients WHERE id = ?', [client.id]);
+      const isMatch = await comparePassword(current_password, existingClients[0]?.password_hash || '');
       if (!isMatch) {
         return NextResponse.json(
           { error: 'La contraseña actual ingresada es incorrecta.' },
@@ -94,3 +94,4 @@ export async function PUT(req: NextRequest) {
     );
   }
 }
+

@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     const totalPendingBalance = activeLoans.reduce((sum, l) => sum + Number(l.balance_remaining || 0), 0);
 
     // 2. Próximo vencimiento más cercano
-    const [nextDue] = await query<any[]>(
+    const nextDue = await query<any[]>(
       `SELECT i.id, i.loan_id, i.installment_number, i.due_date, i.total_amount, i.balance, l.loan_code
        FROM installments i
        JOIN loans l ON i.loan_id = l.id
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     );
 
     // 3. Métricas de cumplimiento de pago (Pagos al día %)
-    const [installmentStats] = await query<any[]>(
+    const installmentStats = await query<any[]>(
       `SELECT 
          COUNT(*) as total_installments,
          SUM(CASE WHEN i.status = 'PAGADA' THEN 1 ELSE 0 END) as paid_installments,
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
         const paid = Math.max(0, total - balance);
         const progressPercentage = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
 
-        const [nextInst] = await query<any[]>(
+        const nextInst = await query<any[]>(
           `SELECT installment_number, due_date, total_amount, balance
            FROM installments
            WHERE loan_id = ? AND status IN ('PENDIENTE', 'PARCIAL')
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
           [l.id]
         );
 
-        const [instCounts] = await query<any[]>(
+        const instCounts = await query<any[]>(
           `SELECT 
              COUNT(*) as total_count,
              SUM(CASE WHEN status = 'PAGADA' THEN 1 ELSE 0 END) as paid_count,
@@ -136,7 +136,7 @@ export async function GET(req: NextRequest) {
       [clientId]
     );
 
-    const [unreadCountResult] = await query<any[]>(
+    const unreadCountResult = await query<any[]>(
       `SELECT COUNT(*) as unread_count
        FROM portal_notifications
        WHERE client_id = ? AND is_read = 0`,
@@ -180,3 +180,4 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+

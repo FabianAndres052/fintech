@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verificar que el préstamo pertenezca a este cliente
-    const [loans] = await query<any[]>('SELECT * FROM loans WHERE id = ? AND client_id = ? LIMIT 1', [loanId, client.id]);
+    const loans = await query<any[]>('SELECT * FROM loans WHERE id = ? AND client_id = ? LIMIT 1', [loanId, client.id]);
     if (!loans || loans.length === 0) {
       return NextResponse.json({ error: 'El crédito no existe o no pertenece a este cliente.' }, { status: 404 });
     }
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     // Verificar cuota si aplica
     let installmentNumber = null;
     if (installmentId) {
-      const [inst] = await query<any[]>('SELECT * FROM installments WHERE id = ? AND loan_id = ? LIMIT 1', [installmentId, loanId]);
+      const inst = await query<any[]>('SELECT * FROM installments WHERE id = ? AND loan_id = ? LIMIT 1', [installmentId, loanId]);
       if (inst && inst.length > 0) {
         installmentNumber = inst[0].installment_number;
       }
@@ -94,3 +94,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Error al iniciar pago en Bold.' }, { status: 500 });
   }
 }
+

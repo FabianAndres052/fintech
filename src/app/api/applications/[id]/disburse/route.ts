@@ -17,7 +17,7 @@ export async function POST(
     const { id } = await params;
     const applicationId = Number(id);
 
-    const [apps] = await query<any[]>('SELECT * FROM loan_applications WHERE id = ? LIMIT 1', [applicationId]);
+    const apps = await query<any[]>('SELECT * FROM loan_applications WHERE id = ? LIMIT 1', [applicationId]);
     if (!apps || apps.length === 0) {
       return NextResponse.json({ error: 'Solicitud no encontrada' }, { status: 404 });
     }

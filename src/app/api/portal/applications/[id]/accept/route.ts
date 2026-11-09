@@ -17,7 +17,7 @@ export async function POST(
     const { id } = await params;
     const applicationId = Number(id);
 
-    const [apps] = await query<any[]>(
+    const apps = await query<any[]>(
       `SELECT * FROM loan_applications WHERE id = ? AND client_id = ? LIMIT 1`,
       [applicationId, client.id]
     );
@@ -97,3 +97,4 @@ export async function POST(
     );
   }
 }
+

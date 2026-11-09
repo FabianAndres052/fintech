@@ -244,3 +244,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message || 'Error procesando webhook' }, { status: 500 });
   }
 }
+
