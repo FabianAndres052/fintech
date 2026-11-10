@@ -41,6 +41,7 @@ export default function ClientsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [availableCash, setAvailableCash] = useState(0);
+  const [adminRole, setAdminRole] = useState<string>('ADMIN');
 
   // Modales
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
@@ -63,6 +64,13 @@ export default function ClientsPage() {
   const [portalPassword, setPortalPassword] = useState('Fintech2026*');
   const [portalSaving, setPortalSaving] = useState(false);
   const [portalFeedback, setPortalFeedback] = useState<string | null>(null);
+
+  // Modal de Eliminación de Cliente
+  const [deleteModalClient, setDeleteModalClient] = useState<Client | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'DEACTIVATE' | 'HARD_DELETE'>('DEACTIVATE');
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleTogglePortalAccess = async () => {
     if (!portalModalClient) return;
@@ -169,6 +177,7 @@ export default function ClientsPage() {
         router.push('/login');
         return;
       }
+      if (authData.admin?.role) setAdminRole(authData.admin.role);
 
       const res = await fetch(`/api/clients${search ? `?search=${encodeURIComponent(search)}` : ''}`, { cache: 'no-store' });
       const data = await res.json();
@@ -294,6 +303,39 @@ export default function ClientsPage() {
       fetchClients();
     } catch (err: any) {
       alert(err.message);
+    }
+  };
+
+  const handleOpenDeleteModal = (client: Client, mode: 'DEACTIVATE' | 'HARD_DELETE') => {
+    setDeleteModalClient(client);
+    setDeleteMode(mode);
+    setDeleteConfirmText('');
+    setDeleteError(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModalClient) return;
+    if (deleteMode === 'HARD_DELETE' && deleteConfirmText !== 'ELIMINAR') {
+      setDeleteError('Debes escribir ELIMINAR para confirmar la eliminación permanente.');
+      return;
+    }
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const url =
+        deleteMode === 'HARD_DELETE'
+          ? `/api/clients/${deleteModalClient.id}?mode=HARD_DELETE`
+          : `/api/clients/${deleteModalClient.id}`;
+      const res = await fetch(url, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al eliminar cliente.');
+      setDeleteModalClient(null);
+      setDetailModalOpen(false);
+      fetchClients();
+    } catch (err: any) {
+      setDeleteError(err.message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -465,6 +507,17 @@ export default function ClientsPage() {
                         title="Modificar información del cliente"
                       >
                         <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenDeleteModal(c, adminRole === 'SUPERADMIN' ? 'HARD_DELETE' : 'DEACTIVATE');
+                        }}
+                        className="p-2 rounded-xl bg-[#1C1A29] hover:bg-red-950/60 border border-[#3A3258] hover:border-red-800/60 text-neutral-500 hover:text-red-400 transition-all cursor-pointer shadow-sm active:scale-95"
+                        title={adminRole === 'SUPERADMIN' ? 'Eliminar cliente permanentemente' : 'Inactivar cliente'}
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
                       <ChevronRight className="w-5 h-5 text-neutral-500 group-hover:text-white transition-colors" />
                     </div>
@@ -673,6 +726,22 @@ export default function ClientsPage() {
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                   <span>Editar</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedClientDetail?.client) {
+                      handleOpenDeleteModal(
+                        selectedClientDetail.client,
+                        adminRole === 'SUPERADMIN' ? 'HARD_DELETE' : 'DEACTIVATE'
+                      );
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-950/30 hover:bg-red-950/60 border border-red-800/40 text-red-400 hover:text-red-300 text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+                  title={adminRole === 'SUPERADMIN' ? 'Eliminar cliente permanentemente' : 'Inactivar cliente'}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{adminRole === 'SUPERADMIN' ? 'Eliminar' : 'Inactivar'}</span>
                 </button>
                 <button
                   onClick={() => setDetailModalOpen(false)}
@@ -997,6 +1066,101 @@ export default function ClientsPage() {
               >
                 {portalSaving ? 'Guardando...' : 'Guardar y Enviar por WhatsApp'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CONFIRMACIÓN ELIMINACIÓN / INACTIVACIÓN */}
+      {deleteModalClient && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+          <div className="w-full max-w-md bg-[#0E0D14] border border-red-900/50 rounded-3xl shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className={`px-6 py-5 border-b flex items-center gap-3 ${deleteMode === 'HARD_DELETE' ? 'border-red-900/60 bg-red-950/30' : 'border-amber-900/40 bg-amber-950/20'}`}>
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${deleteMode === 'HARD_DELETE' ? 'bg-red-950/60 text-red-400' : 'bg-amber-950/60 text-amber-400'}`}>
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className={`text-sm font-black ${deleteMode === 'HARD_DELETE' ? 'text-red-300' : 'text-amber-300'}`}>
+                  {deleteMode === 'HARD_DELETE' ? '⚠ Eliminar Cliente Permanentemente' : 'Inactivar Cliente'}
+                </h3>
+                <p className="text-[11px] text-neutral-400 mt-0.5">
+                  {deleteModalClient.first_name} {deleteModalClient.last_name || ''} · {deleteModalClient.document_type} {deleteModalClient.document_number || 'Sin C.C.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              {deleteMode === 'HARD_DELETE' ? (
+                <>
+                  <div className="p-3.5 rounded-2xl bg-red-950/30 border border-red-800/40 text-red-200 text-xs space-y-1.5">
+                    <p className="font-black text-red-300 text-sm">Esta acción es IRREVERSIBLE</p>
+                    <p>Se eliminarán permanentemente de la base de datos:</p>
+                    <ul className="list-disc ml-4 space-y-0.5 text-red-300/80">
+                      <li>Todos los préstamos históricos y completados</li>
+                      <li>Todas las cuotas y registros de pago</li>
+                      <li>Todos los recibos y comprobantes</li>
+                      <li>Solicitudes y mensajes del portal</li>
+                      <li>Datos personales del cliente</li>
+                    </ul>
+                    <p className="text-red-200 font-semibold mt-2">Solo disponible para el Super Administrador.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-neutral-300">
+                      Escribe <span className="text-red-400 font-black">ELIMINAR</span> para confirmar:
+                    </label>
+                    <input
+                      type="text"
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder="Escribe ELIMINAR"
+                      className="w-full bg-[#14121F] border border-red-800/50 focus:border-red-500 rounded-2xl px-4 py-3 text-sm font-bold text-white focus:outline-none placeholder-neutral-600 tracking-wider"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="p-3.5 rounded-2xl bg-amber-950/30 border border-amber-800/40 text-amber-200 text-xs space-y-1.5">
+                  <p className="font-black text-amber-300">El cliente quedará inactivo</p>
+                  <p>No se eliminarán sus datos ni historial. Podrá reactivarlo desde la edición del cliente cambiando su estado a ACTIVO.</p>
+                  <p className="text-amber-300/80 mt-1">Para eliminación permanente, solo el Super Administrador tiene ese permiso.</p>
+                </div>
+              )}
+
+              {deleteError && (
+                <div className="p-3 rounded-xl bg-red-950/40 border border-red-800/40 text-red-300 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+                  <span>{deleteError}</span>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteModalClient(null)}
+                  disabled={deleting}
+                  className="flex-1 py-3 rounded-2xl border border-neutral-700 text-neutral-300 text-xs font-bold hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={deleting || (deleteMode === 'HARD_DELETE' && deleteConfirmText !== 'ELIMINAR')}
+                  className={`flex-[2] py-3 rounded-2xl text-white text-xs font-black transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2 ${
+                    deleteMode === 'HARD_DELETE'
+                      ? 'bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 hover:to-red-800 shadow-red-950/60'
+                      : 'bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 shadow-amber-950/60'
+                  }`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {deleting
+                    ? 'Procesando...'
+                    : deleteMode === 'HARD_DELETE'
+                    ? 'Eliminar Definitivamente'
+                    : 'Inactivar Cliente'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

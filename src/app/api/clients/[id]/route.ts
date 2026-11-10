@@ -163,30 +163,86 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     const { id } = await params;
     const clientId = Number(id);
+    const { searchParams } = new URL(req.url);
+    const mode = searchParams.get('mode') || 'DEACTIVATE'; // DEACTIVATE | HARD_DELETE
 
-    // Comprobar si tiene préstamos activos
+    // Verificar que el cliente existe
+    const clientRows = await query<any[]>('SELECT * FROM clients WHERE id = ?', [clientId]);
+    if (!clientRows || clientRows.length === 0) {
+      return NextResponse.json({ error: 'Cliente no encontrado.' }, { status: 404 });
+    }
+    const client = clientRows[0];
+
+    // Comprobar si tiene préstamos activos (bloquea tanto inactivación como eliminación)
     const activeLoans = await query<any[]>(
       'SELECT id FROM loans WHERE client_id = ? AND status IN ("ACTIVO", "EN_MORA")',
       [clientId]
     );
-
     if (activeLoans.length > 0) {
       return NextResponse.json(
-        { error: 'No se puede eliminar el cliente porque tiene préstamos activos vigentes.' },
+        { error: 'No se puede eliminar ni inactivar el cliente porque tiene préstamos activos o en mora. Ciérrelos o cancélelos primero.' },
         { status: 400 }
       );
     }
 
+    // ─── ELIMINACIÓN PERMANENTE (Solo SUPERADMIN) ─────────────────────────────
+    if (mode === 'HARD_DELETE') {
+      if (admin.role !== 'SUPERADMIN') {
+        return NextResponse.json(
+          { error: 'Solo el Super Administrador puede eliminar clientes de forma permanente.' },
+          { status: 403 }
+        );
+      }
+
+      // Eliminar en cascada respetando FK: mensajes → notificaciones → recibos → pagos → cuotas → préstamos → solicitudes → cliente
+      await query('DELETE FROM application_messages WHERE client_id = ?', [clientId]);
+      await query('DELETE FROM portal_notifications WHERE client_id = ?', [clientId]);
+      await query('DELETE FROM bold_payments WHERE client_id = ?', [clientId]);
+
+      // Obtener IDs de préstamos para eliminar recibos y cuotas
+      const loans = await query<any[]>('SELECT id FROM loans WHERE client_id = ?', [clientId]);
+      for (const loan of loans) {
+        await query('DELETE FROM receipts WHERE loan_id = ?', [loan.id]);
+        await query('DELETE FROM payments WHERE loan_id = ?', [loan.id]);
+        await query('DELETE FROM installments WHERE loan_id = ?', [loan.id]);
+      }
+
+      await query('DELETE FROM loans WHERE client_id = ?', [clientId]);
+      await query('DELETE FROM loan_applications WHERE client_id = ?', [clientId]);
+      await query('DELETE FROM clients WHERE id = ?', [clientId]);
+
+      await query(
+        'INSERT INTO audit_logs (user_id, action, entity, entity_id, details) VALUES (?, ?, ?, ?, ?)',
+        [
+          admin.id,
+          'HARD_DELETE_CLIENT',
+          'clients',
+          String(clientId),
+          JSON.stringify({
+            deleted_client_name: `${client.first_name} ${client.last_name || ''}`.trim(),
+            deleted_client_doc: client.document_number,
+            loans_deleted: loans.length,
+          }),
+        ]
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: `Cliente "${client.first_name} ${client.last_name || ''}".trim() eliminado permanentemente junto con todos sus datos.`,
+      });
+    }
+
+    // ─── INACTIVACIÓN (ADMIN o SUPERADMIN) ────────────────────────────────────
     await query('UPDATE clients SET status = "INACTIVO" WHERE id = ?', [clientId]);
 
     await query(
       'INSERT INTO audit_logs (user_id, action, entity, entity_id, details) VALUES (?, ?, ?, ?, ?)',
-      [admin.id, 'DEACTIVATE_CLIENT', 'clients', String(clientId), JSON.stringify({ status: 'INACTIVO' })]
+      [admin.id, 'DEACTIVATE_CLIENT', 'clients', String(clientId), JSON.stringify({ status: 'INACTIVO', name: `${client.first_name} ${client.last_name || ''}`.trim() })]
     );
 
     return NextResponse.json({ success: true, message: 'Cliente inactivado correctamente.' });
   } catch (error: any) {
     console.error('Error deleting client:', error);
-    return NextResponse.json({ error: 'Error al inactivar cliente.' }, { status: 500 });
+    return NextResponse.json({ error: 'Error al procesar la eliminación del cliente.' }, { status: 500 });
   }
 }
